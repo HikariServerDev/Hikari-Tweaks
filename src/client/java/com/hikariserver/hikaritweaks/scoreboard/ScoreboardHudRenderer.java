@@ -9,23 +9,24 @@ import net.minecraft.client.util.math.MatrixStack;
 
 import java.util.List;
 
-/**
- * カスタムスコアボード HUD 描画クラス。
- *
- * ┌─ 配置方針 ────────────────────────────────────────────┐
- * │  positionX / positionY は画面幅・高さに対する % (0-100)  │
- * │  positionX=100 かつ positionY=50 がデフォルト（右中央）   │
- * │  スコアボードの右端が anchorX に、中央が anchorY に来る    │
- * └──────────────────────────────────────────────────────┘
- */
+// カスタムスコアボード HUD 描画クラス。
+//
+// ┌─ 配置方針 ────────────────────────────────────────────┐
+// │  positionX / positionY は画面幅・高さに対する % (0-100)  │
+// │  positionX=100 かつ positionY=50 がデフォルト（右中央）   │
+// │  スコアボードの右端が anchorX に、中央が anchorY に来る    │
+// └──────────────────────────────────────────────────────┘
 public final class ScoreboardHudRenderer {
 
+    // 現在表示中のページ番号（0 始まり）
     private static int currentPage = 0;
 
+    // インスタンス化を禁止するプライベートコンストラクタ
     private ScoreboardHudRenderer() {}
 
     // ── ページ操作 ───────────────────────────────────────
 
+    // 次のページへ移動する（最終ページを超えない）
     public static void nextPage() {
         ScoreboardPacketClient.RankingData data = ScoreboardPacketClient.getCachedRanking();
         if (data == null) return;
@@ -33,18 +34,23 @@ public final class ScoreboardHudRenderer {
         if (currentPage < max) currentPage++;
     }
 
+    // 前のページへ移動する（0 未満にならない）
     public static void prevPage() {
         if (currentPage > 0) currentPage--;
     }
 
+    // 先頭ページへリセットする
     public static void resetPage() { currentPage = 0; }
 
+    // 現在のページ番号を返す
     public static int getCurrentPage() { return currentPage; }
 
+    // 総エントリ数とページサイズから最大ページ番号（0 始まり）を返す
     public static int getMaxPage(int totalEntries, int pageSize) {
         return calcMaxPage(totalEntries, pageSize);
     }
 
+    // 最大ページ番号を計算する内部ヘルパー
     private static int calcMaxPage(int total, int pageSize) {
         if (pageSize <= 0 || total <= pageSize) return 0;
         return (total - 1) / pageSize;
@@ -52,26 +58,28 @@ public final class ScoreboardHudRenderer {
 
     // ── 描画 ─────────────────────────────────────────────
 
-    /**
-     * インゲーム HUD に描画する。
-     * MixinInGameHud から毎フレーム呼ばれる。
-     */
+    // インゲーム HUD に描画する。
+    // MixinInGameHud から毎フレーム呼ばれる。
     public static void render(MatrixStack matrices) {
         ClientConfig cfg = ClientConfigManager.config;
+        // カスタム HUD が無効なら何もしない
         if (!cfg.scoreboardCustomHud) return;
+        // サーバーから非表示指示を受けている場合は何もしない
         if (ScoreboardPacketClient.isServerHidden()) return;
 
         ScoreboardPacketClient.RankingData data = ScoreboardPacketClient.getCachedRanking();
         if (data == null) return;
 
         MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.options.debugEnabled) return; // F3 中は非表示
+        // F3 デバッグ画面表示中はスコアボードを非表示にする
+        if (mc.options.debugEnabled) return;
 
         TextRenderer tr      = mc.textRenderer;
         int scaledW          = mc.getWindow().getScaledWidth();
         int scaledH          = mc.getWindow().getScaledHeight();
         float scale          = cfg.scoreboardScale;
 
+        // 全エントリリストと総数を取得する
         List<ScoreboardPacketClient.RankingEntry> full = data.full();
         int total = full.size();
         if (total == 0) return;
@@ -82,6 +90,7 @@ public final class ScoreboardHudRenderer {
         // （resetPage() は呼ばず、可能な限り現在ページを維持する）
         if (currentPage > maxPage) currentPage = maxPage;
 
+        // 表示するエントリ範囲を計算する
         int startIdx = currentPage * pageSize;
         int endIdx   = Math.min(startIdx + pageSize, total);
         List<ScoreboardPacketClient.RankingEntry> display = full.subList(startIdx, endIdx);
@@ -90,6 +99,7 @@ public final class ScoreboardHudRenderer {
         String title    = data.title();
         int titleW      = tr.getWidth(title);
         int maxEntryW   = titleW;
+        // 各エントリ行の最大幅を求める
         for (int i = 0; i < display.size(); i++) {
             int globalRank = startIdx + i + 1;
             String rankStr  = String.format("%2d ", globalRank);
@@ -98,13 +108,13 @@ public final class ScoreboardHudRenderer {
             int w = tr.getWidth(rankStr) + tr.getWidth(nameStr) + 4 + tr.getWidth(scoreStr);
             if (w > maxEntryW) maxEntryW = w;
         }
-        // ページ表示行の幅
+        // ページ表示行の幅を考慮する
         if (maxPage > 0) {
             String pageLine = "◀ " + (currentPage + 1) + "/" + (maxPage + 1) + " ▶";
             int pw = tr.getWidth(pageLine);
             if (pw > maxEntryW) maxEntryW = pw;
         }
-        // サーバートータル行の幅
+        // サーバートータル行の幅を考慮する
         if (cfg.scoreboardShowServerTotal && data.serverTotal() >= 0) {
             String totalLabel = "Total:";
             String totalValue = String.valueOf(data.serverTotal());
@@ -112,6 +122,7 @@ public final class ScoreboardHudRenderer {
             if (tw > maxEntryW) maxEntryW = tw;
         }
 
+        // ボックスサイズを計算する（左右3pxずつパディング）
         int lineH    = 9;
         int boxW     = maxEntryW + 6;   // 左右3pxずつパディング
         int boxH     = (display.size() + 1) * lineH + 2; // +1 = タイトル行, +2 = 上下1px
@@ -122,13 +133,13 @@ public final class ScoreboardHudRenderer {
         int anchorX = (int)(scaledW * cfg.scoreboardPositionX / 100.0);
         int anchorY = (int)(scaledH * cfg.scoreboardPositionY / 100.0);
 
-        // スケール適用
+        // スケール変換をマトリクススタックに積む
         matrices.push();
         matrices.translate(anchorX, anchorY, 0);
         matrices.scale(scale, scale, 1.0f);
         matrices.translate(-anchorX / scale, -anchorY / scale, 0);
 
-        // スケール後の論理座標
+        // スケール後の論理座標でアンカーを再計算する
         int lAnchorX = (int)(anchorX / scale);
         int lAnchorY = (int)(anchorY / scale);
 
@@ -139,10 +150,10 @@ public final class ScoreboardHudRenderer {
 
         // ── タイトル行 ──────────────────────────────────────
         int titleBgY = yStart;
-        // ヘッダー背景
+        // ヘッダー背景を描画する
         DrawableHelper.fill(matrices, xStart, titleBgY, xEnd, titleBgY + lineH + 1,
                 cfg.scoreboardHeaderColor);
-        // タイトルテキスト（中央揃え）
+        // タイトルテキストを中央揃えで描画する
         int titleX = xStart + (boxW - titleW) / 2;
         tr.drawWithShadow(matrices, title, titleX, titleBgY + 1, cfg.scoreboardTextColor);
 
@@ -154,6 +165,7 @@ public final class ScoreboardHudRenderer {
                     cfg.scoreboardHeaderColor);
             String totalLabel = "Total:";
             String totalValue = String.valueOf(data.serverTotal());
+            // ラベルを左寄せ、数値を右寄せで描画する
             tr.drawWithShadow(matrices, totalLabel, xStart + 2, totalRowY, 0xFFAAAAAA);
             int totalValueX = xEnd - tr.getWidth(totalValue) - 2;
             tr.drawWithShadow(matrices, totalValue, totalValueX, totalRowY, cfg.scoreboardScoreColor);
@@ -166,24 +178,24 @@ public final class ScoreboardHudRenderer {
             ScoreboardPacketClient.RankingEntry entry = display.get(i);
             int rowY = yStart + (i + 1) * lineH + 1 + statsRowOffset;
 
-            // 背景
+            // エントリ行の背景を描画する
             DrawableHelper.fill(matrices, xStart, rowY, xEnd, rowY + lineH,
                     cfg.scoreboardBodyColor);
 
-            // 自分かどうか判定
+            // 自分かどうかを判定して色を変える
             boolean isSelf = entry.name().equals(data.selfName());
 
-            // 順位
+            // 順位を描画する（自分は強調色）
             String rankStr = String.format("%2d ", globalRank);
             int rankColor  = isSelf ? cfg.scoreboardSelfColor : 0xFFAAAAAA;
             tr.drawWithShadow(matrices, rankStr, xStart + 2, rowY, rankColor);
 
-            // プレイヤー名
+            // プレイヤー名を描画する（自分は強調色）
             int rankW   = tr.getWidth(rankStr);
             int nameColor = isSelf ? cfg.scoreboardSelfColor : cfg.scoreboardTextColor;
             tr.drawWithShadow(matrices, entry.name(), xStart + 2 + rankW, rowY, nameColor);
 
-            // スコア数値（右寄せ）
+            // スコア数値を右寄せで描画する（自分は強調色）
             String scoreStr = String.valueOf(entry.value());
             int scoreX = xEnd - tr.getWidth(scoreStr) - 2;
             int scoreColor = isSelf ? cfg.scoreboardSelfColor : cfg.scoreboardScoreColor;
@@ -191,15 +203,18 @@ public final class ScoreboardHudRenderer {
         }
 
         // ── ページ行 ────────────────────────────────────────
+        // ページが複数ある場合のみページナビゲーション行を描画する
         if (maxPage > 0) {
             int pageRowY = yStart + (display.size() + 1) * lineH + 1 + statsRowOffset;
             DrawableHelper.fill(matrices, xStart, pageRowY, xEnd, pageRowY + lineH,
                     cfg.scoreboardHeaderColor);
             String pageLine = "◀ " + (currentPage + 1) + "/" + (maxPage + 1) + " ▶";
+            // ページ表示を中央揃えで描画する
             int pageLineX = xStart + (boxW - tr.getWidth(pageLine)) / 2;
             tr.drawWithShadow(matrices, pageLine, pageLineX, pageRowY, 0xFFAAAAAA);
         }
 
+        // マトリクスを元に戻す
         matrices.pop();
     }
 }

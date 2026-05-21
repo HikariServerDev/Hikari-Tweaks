@@ -1,6 +1,21 @@
 ﻿# Hikari-Tweaks
 
-現在バージョン: **v1.0.6**
+> **A client-side Fabric utility mod for Minecraft 1.18.2**, designed for the Hikari SMP environment.  
+> Provides a custom scoreboard HUD, auto-restock features, durability warnings, and more.
+
+### Requirements
+| Mod | Type |
+|---|---|
+| [Fabric Loader](https://fabricmc.net/) `>=0.14.0` | **Required** |
+| [Fabric API](https://modrinth.com/mod/fabric-api) | **Required** |
+| [MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib) | **Required** |
+| [MiniHUD](https://www.curseforge.com/minecraft/mc-mods/minihud) | Optional (beacon fix feature) |
+| [Litematica](https://www.curseforge.com/minecraft/mc-mods/litematica) | Optional (material list auto-refresh) |
+| [Mod Menu](https://modrinth.com/mod/modmenu) | Optional (GUI config screen) |
+
+---
+
+現在バージョン: **v1.0.7**
 
 Minecraft 1.18.2 向けの **Fabric クライアントサイド Mod** です。  
 Hikari 環境で使う便利機能をまとめています。
@@ -202,7 +217,35 @@ Hikari 環境で使う便利機能をまとめています。
 
 Apache-2.0
 
-## 12. Update Checker (GitHub Releases)
+---
+
+## 12. Credits
+
+**masa** (fi.dy.masa)
+- [MaLiLib](https://github.com/maruohon/malilib) — LGPLv3
+- [MiniHUD](https://github.com/maruohon/minihud) — LGPLv3
+- [Litematica](https://github.com/maruohon/litematica) — LGPLv3
+- [Tweakeroo](https://github.com/maruohon/tweakeroo) — LGPLv3
+
+  MaLiLib の API を config・hotkey・GUI 全般に使用。  
+  MiniHUD の OverlayRenderer に Mixin を挿入（フリーカメラ時ビーコン範囲補正）。  
+  Litematica のクラスを直接利用（マテリアルリスト自動 Refresh）。  
+  HandRestock の設計を Tweakeroo の handrestock 機能を参考に実装。
+
+**Sim_999_256** (ASTRAL-SMP)
+- [AST-Tweaks](https://github.com/ASTRAL-SMP/AST-Tweaks) — Apache-2.0
+
+  `PositionEditorScreen`（スコアボード位置調整画面）の実装をベースに作成。
+  クラス構造・ドラッグ検出ロジック・スケールスライダーの設計が AST-Tweaks の実装に基づいています。
+
+**pugur**
+- [ama-tweaks](https://github.com/pugur523/ama-tweaks) — MIT
+
+  コンテナ開閉時のホットバー自動補充機能の設計アイデアを参考にしました。
+
+---
+
+## 13. Update Checker (GitHub Releases)
 
 Hikari-Tweaks には、GitHub Releases の新バージョンを確認してゲーム参加時に通知する機能があります。
 

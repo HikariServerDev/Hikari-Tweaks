@@ -14,8 +14,10 @@ import net.minecraft.client.MinecraftClient;
 // HikariTweaksClient#onInitializeClient() から一度だけ呼ぶ。
 public final class HotkeyCallbacks {
 
+    // インスタンス化を禁止するプライベートコンストラクタ
     private HotkeyCallbacks() {}
 
+    // 全ホットキーのコールバックを一括登録する
     public static void init() {
         // トグル系：押すたびに ON/OFF が切り替わりアクションバーに状態表示
         attachToggle(TweaksOptions.FIX_BEACON_RANGE_FREE_CAM);
@@ -29,6 +31,7 @@ public final class HotkeyCallbacks {
         TweaksOptions.OPEN_CONFIG.getKeybind().setCallback(new IHotkeyCallback() {
             @Override
             public boolean onKeyAction(KeyAction action, IKeybind key) {
+                // MC スレッドで画面遷移を行う
                 MinecraftClient mc = MinecraftClient.getInstance();
                 if (mc != null) {
                     mc.execute(() -> mc.setScreen(new HikariTweaksConfigScreen(mc.currentScreen)));
@@ -62,12 +65,14 @@ public final class HotkeyCallbacks {
         config.getKeybind().setCallback(new IHotkeyCallback() {
             @Override
             public boolean onKeyAction(KeyAction action, IKeybind key) {
+                // 値を反転してアクションバーに状態を表示する
                 config.toggleBooleanValue();
                 boolean enabled = config.getBooleanValue();
                 String status = enabled
                         ? GuiBase.TXT_GREEN + "ON"  + GuiBase.TXT_RST
                         : GuiBase.TXT_RED   + "OFF" + GuiBase.TXT_RST;
                 InfoUtils.printActionbarMessage("%s: %s", config.getPrettyName(), status);
+                // 変更を即座に設定ファイルへ保存する
                 TweaksOptions.writeToConfig(ClientConfigManager.config);
                 ClientConfigManager.save();
                 return true;

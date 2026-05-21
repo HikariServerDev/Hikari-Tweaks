@@ -21,6 +21,7 @@ public abstract class MixinSchematicWorldRefresher {
             remap = false
     )
     private void hikariTweaks$autoRefreshMaterialList(int min, int max, CallbackInfo ci) {
+        // 自動 Refresh が有効なときのみ予約する
         if (TweaksOptions.AUTO_LITEMATICA_REFRESH.getBooleanValue()) {
             LitematicaAutoRefreshHandler.scheduleRefresh();
         }

@@ -17,6 +17,7 @@ public final class LitematicaAutoRefreshHandler {
     // Mixin から通知された Refresh 予約フラグ
     private static boolean refreshScheduled = false;
 
+    // インスタンス化を禁止するプライベートコンストラクタ
     private LitematicaAutoRefreshHandler() {}
 
     // MixinSchematicWorldRefresher から呼ばれる。次 tick で Refresh を実行するよう予約する。
@@ -27,11 +28,15 @@ public final class LitematicaAutoRefreshHandler {
     // ClientTickEvents.END_CLIENT_TICK から毎 tick 呼ばれる。
     // 予約フラグが立っていれば DataManager からマテリアルリストを取得して再生成する。
     public static void tick(MinecraftClient client) {
+        // 予約がなければ何もしない
         if (!refreshScheduled) return;
+        // フラグを消費してから処理する（二重実行を防ぐ）
         refreshScheduled = false;
 
+        // ワールドまたはプレイヤーが存在しない場合はリフレッシュできない
         if (client.world == null || client.player == null) return;
 
+        // Litematica の DataManager からマテリアルリストを取得して再生成する
         MaterialListBase materialList = DataManager.getMaterialList();
         if (materialList != null) {
             materialList.reCreateMaterialList();

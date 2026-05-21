@@ -8,9 +8,9 @@
     "Tamago0314"
   ],
   "contact": {
-    "homepage": "",
-    "sources": "",
-    "issues": ""
+    "homepage": "https://github.com/Tamago0314/Hikari-Tweaks",
+    "sources": "https://github.com/Tamago0314/Hikari-Tweaks",
+    "issues": "https://github.com/Tamago0314/Hikari-Tweaks/issues"
   },
   "license": "Apache-2.0",
   "icon": "assets/hikari-tweaks/icon.png",

@@ -11,28 +11,33 @@ import net.minecraft.text.LiteralText;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 耐久値 1% 警告ハンドラ。
- * Mixin を使わず ClientTickEvents から呼ぶことで refMap 問題を回避。
- * スロット+署名ごとに1回だけ警告を出す。
- */
+// 耐久値 1% 警告ハンドラ。
+// Mixin を使わず ClientTickEvents から呼ぶことで refMap 問題を回避。
+// スロット+署名ごとに1回だけ警告を出す。
 public final class DurabilityWarningHandler {
 
+    // 警告済みスロットの追跡マップ（スロット番号 → "アイテムID|ダメージ値" の署名）
     private static final Map<Integer, String> warnedSignatures = new HashMap<>();
 
+    // インスタンス化を禁止するプライベートコンストラクタ
     private DurabilityWarningHandler() {}
 
+    // 毎 tick 呼ばれるエントリーポイント
     public static void tick(MinecraftClient mc) {
+        // 機能が無効な場合は警告記録をクリアして早期リターンする
         if (!TweaksOptions.DURABILITY_WARNING_ENABLED.getBooleanValue()) {
             warnedSignatures.clear();
             return;
         }
         ClientPlayerEntity player = mc.player;
+        // プレイヤーまたはワールドが存在しない場合は早期リターンする
         if (player == null || mc.world == null) return;
 
+        // インベントリの全スロットを走査して耐久値を確認する
         for (int slot = 0; slot < player.getInventory().size(); slot++) {
             ItemStack stack = player.getInventory().getStack(slot);
 
+            // 空スロットまたは耐久なしアイテムは警告不要なので記録を削除する
             if (stack.isEmpty() || !stack.isDamageable()) {
                 warnedSignatures.remove(slot);
                 continue;
@@ -40,24 +45,28 @@ public final class DurabilityWarningHandler {
 
             int maxDamage = stack.getMaxDamage();
             int remaining  = maxDamage - stack.getDamage();
+            // 1% 以下になる閾値を計算する（最小 1）
             int threshold  = Math.max(1, (int) Math.ceil(maxDamage * 0.01));
 
+            // 閾値より多い耐久が残っている場合は警告不要なので記録を削除する
             if (remaining > threshold) {
                 warnedSignatures.remove(slot);
                 continue;
             }
 
+            // 同じアイテム・同じダメージ値の警告は重複して出さない
             String sig = stack.getItem().toString() + "|" + stack.getDamage();
             if (sig.equals(warnedSignatures.get(slot))) continue;
 
+            // 警告記録を更新して警告メッセージとサウンドを出す
             warnedSignatures.put(slot, sig);
             int percent = Math.max(0, (int) Math.ceil((remaining * 100.0) / maxDamage));
             player.sendMessage(
                     new LiteralText(
-                            "\u00A7c[HikariTweaks]\u00A7f 耐久値警告: \u00A7e"
+                            "§c[HikariTweaks]§f 耐久値警告: §e"
                                     + stack.getName().getString()
-                                    + "\u00A7f 残り \u00A7c" + remaining
-                                    + "\u00A7f (" + percent + "%)"
+                                    + "§f 残り §c" + remaining
+                                    + "§f (" + percent + "%)"
                     ),
                     false
             );

@@ -1,0 +1,31 @@
+Hikari-Tweaks
+Copyright 2025 Tamago0314
+
+This product includes code and design references from the following projects:
+
+------------------------------------------------------------------------
+AST-Tweaks by Sim_999_256 / ASTRAL-SMP
+Licensed under the Apache License, Version 2.0
+https://github.com/ASTRAL-SMP/AST-Tweaks
+
+  PositionEditorScreen is based on the implementation in this project.
+  The class structure, drag-and-drop detection logic, and scale slider
+  design are derived from AST-Tweaks' PositionEditorScreen.
+
+------------------------------------------------------------------------
+ama-tweaks by pugur
+Licensed under the MIT License
+https://github.com/pugur523/ama-tweaks
+
+  The design concept of the hotbar auto-restock feature (triggered on
+  container open) is inspired by this work.
+
+------------------------------------------------------------------------
+MaLiLib, MiniHUD, Litematica, Tweakeroo by masa (fi.dy.masa)
+Licensed under the GNU Lesser General Public License v3 (LGPLv3)
+https://github.com/maruohon/
+
+  MaLiLib API is used for config, hotkey, and GUI management.
+  MiniHUD OverlayRenderer is patched via Mixin for beacon range fix.
+  Litematica classes are used for material list auto-refresh.
+  HandRestock design is inspired by Tweakeroo's handrestock feature.

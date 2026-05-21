@@ -23,9 +23,10 @@ import net.minecraft.text.Text;
 // 各ハンドラの登録、設定読み込み、ホットキー初期化をここで行う。
 public class HikariTweaksClient implements ClientModInitializer {
 
+    // MOD の識別子・表示名・バージョン定数
     public static final String MOD_ID      = "hikari-tweaks";
     public static final String MOD_NAME    = "Hikari-Tweaks";
-    public static final String MOD_VERSION = "1.0.6";
+    public static final String MOD_VERSION = "1.0.7";
 
     // FabricLoader から取得したバージョン文字列のキャッシュ
     private static String cachedVersion;
@@ -70,6 +71,7 @@ public class HikariTweaksClient implements ClientModInitializer {
             ScoreboardPacketClient.resetHiddenState();
             ScoreboardHudRenderer.resetPage();
             UpdateCheckerService.onJoin(client);
+            // プレイヤーが存在するときのみバージョン通知メッセージを送信する
             if (client.player != null) {
                 client.player.sendMessage(
                         Text.of("[" + MOD_NAME + "] " + getModVersion() + " Running"), false);
@@ -79,7 +81,9 @@ public class HikariTweaksClient implements ClientModInitializer {
 
     // fabric.mod.json のバージョン文字列を返す。初回取得後はキャッシュを返す。
     public static String getModVersion() {
+        // キャッシュ済みなら即返却
         if (cachedVersion != null) return cachedVersion;
+        // FabricLoader 経由でバージョン文字列を取得し、見つからなければ "unknown" を使う
         cachedVersion = FabricLoader.getInstance()
                 .getModContainer(MOD_ID)
                 .map(c -> c.getMetadata().getVersion().getFriendlyString())

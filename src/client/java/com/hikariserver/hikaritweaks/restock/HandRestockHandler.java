@@ -26,20 +26,25 @@ public final class HandRestockHandler {
     // 連続補充でサーバーに負荷をかけないための最小インターバル（tick）
     private static final int RESTOCK_INTERVAL_TICKS = 5;
 
+    // 前回補充からの経過 tick 数
     private static int ticksSinceLastRestock = 0;
 
+    // インスタンス化を禁止するプライベートコンストラクタ
     private HandRestockHandler() {}
 
     // 毎 tick 呼ばれるエントリーポイント
     public static void tick(MinecraftClient client) {
         ClientPlayerEntity player = client.player;
+        // プレイヤーまたはワールドが存在しない場合は何もしない
         if (player == null || client.world == null) return;
+        // 機能が無効なら何もしない
         if (!TweaksOptions.HAND_RESTOCK.getBooleanValue()) return;
 
         // インターバル管理：頻繁なスロット操作でサーバーを詰まらせない
         ticksSinceLastRestock++;
         if (ticksSinceLastRestock < RESTOCK_INTERVAL_TICKS) return;
 
+        // 補充対象アイテム ID リストを取得する
         List<String> targetIds = TweaksOptions.HAND_RESTOCK_LIST.getStrings();
         if (targetIds.isEmpty()) return;
 
@@ -47,15 +52,18 @@ public final class HandRestockHandler {
         PlayerInventory inventory = player.getInventory();
         for (int hotbarSlot = 0; hotbarSlot < 9; hotbarSlot++) {
             ItemStack stack = inventory.getStack(hotbarSlot);
+            // 空スロットはスキップする
             if (stack.isEmpty()) continue;
 
             String itemId = Registry.ITEM.getId(stack.getItem()).toString();
+            // 補充対象リストにないアイテムはスキップする
             if (!targetIds.contains(itemId)) continue;
 
             // 閾値以下なら補充を試みる
             if (stack.getCount() <= RESTOCK_THRESHOLD) {
                 boolean restocked = tryRestock(client, player, hotbarSlot, itemId, stack.getMaxCount());
                 if (restocked) {
+                    // 補充成功したらインターバルをリセットして今 tick は 1 スロットのみ処理する
                     ticksSinceLastRestock = 0;
                     return; // 1 tick に 1 スロットずつ処理して安全に
                 }
@@ -85,9 +93,11 @@ public final class HandRestockHandler {
         PlayerInventory inventory = player.getInventory();
         for (int invSlot = 35; invSlot >= 9; invSlot--) {
             ItemStack source = inventory.getStack(invSlot);
+            // 空スロットはスキップする
             if (source.isEmpty()) continue;
 
             String sourceId = Registry.ITEM.getId(source.getItem()).toString();
+            // アイテム ID が一致するものだけ使う
             if (!sourceId.equals(itemId)) continue;
 
             // ピックアップ → ホットバーへ右クリック分配 → 残りを戻す の 3 ステップ
@@ -98,9 +108,9 @@ public final class HandRestockHandler {
             int take = Math.min(needed, source.getCount());
             int invScreenSlot = invSlot; // ScreenHandler 上のインベントリスロット ID はそのまま
 
-            // 1. ソーススロットをピックアップ
+            // 1. ソーススロットをピックアップする
             im.clickSlot(syncId, invScreenSlot, 0, SlotActionType.PICKUP, player);
-            // 2. 必要な個数だけホットバーへ右クリック（1 個ずつ）
+            // 2. 必要な個数だけホットバーへ右クリック（1 個ずつ）する
             for (int i = 0; i < take; i++) {
                 im.clickSlot(syncId, hotbarScreenSlot, 1, SlotActionType.PICKUP, player);
             }

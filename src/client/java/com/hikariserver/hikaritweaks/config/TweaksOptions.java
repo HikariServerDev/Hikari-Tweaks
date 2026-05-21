@@ -18,26 +18,31 @@ public final class TweaksOptions {
 
     // ── 補助機能 ───────────────────────────────────────────────────────────────
 
+    // MiniHUD フリーカメラ時のビーコン範囲をプレイヤー位置基準に修正するオプション
     public static final ConfigBooleanHotkeyed FIX_BEACON_RANGE_FREE_CAM = new ConfigBooleanHotkeyed(
             "fixBeaconRangeFreeCam", true, "",
             "MiniHUD フリーカメラ時のビーコン範囲をプレイヤー位置基準に修正します。",
             "MiniHUD 補正"
     );
+    // 耐久値 1% 以下になったときにチャットへ警告を出すオプション
     public static final ConfigBooleanHotkeyed DURABILITY_WARNING_ENABLED = new ConfigBooleanHotkeyed(
             "durabilityWarningEnabled", true, "",
             "耐久値が 1% 以下になったときにチャットへ警告を出します。",
             "耐久値警告"
     );
+    // コンテナを開いた時にホットバーへ自動補充するオプション
     public static final ConfigBooleanHotkeyed AUTO_RESTOCK_HOTBAR = new ConfigBooleanHotkeyed(
             "autoRestockHotbar", false, "",
             "チェストなどのコンテナを開いた時、設定リストのアイテムをホットバーへ補充します。",
             "ホットバー自動補充"
     );
+    // 使われたトーテムをインベントリから補充するオプション
     public static final ConfigBooleanHotkeyed TOTEM_RESTOCK = new ConfigBooleanHotkeyed(
             "totemRestock", false, "",
             "使用された不死のトーテムをインベントリから探して、使っていた手へ補充します。",
             "トーテム補充"
     );
+    // Litematica レイヤー変更後にマテリアルリストを自動 Refresh するオプション
     public static final ConfigBooleanHotkeyed AUTO_LITEMATICA_REFRESH = new ConfigBooleanHotkeyed(
             "autoLitematicaRefresh", false, "",
             "Litematica のレイヤー変更後にマテリアルリストを自動で Refresh します（要 Litematica）。",
@@ -52,6 +57,7 @@ public final class TweaksOptions {
 
     // ── リスト ─────────────────────────────────────────────────────────────────
 
+    // ホットバー自動補充の対象アイテム ID リスト
     public static final ConfigStringList HOTBAR_RESTOCK_LIST = new ConfigStringList(
             "hotbarRestockList",
             ImmutableList.of("minecraft:firework_rocket", "minecraft:golden_carrot"),
@@ -66,14 +72,17 @@ public final class TweaksOptions {
 
     // ── ホットキー ─────────────────────────────────────────────────────────────
 
+    // 設定画面を開くホットキー（デフォルト: 右シフト）
     public static final ConfigHotkey OPEN_CONFIG = new ConfigHotkey(
             "openConfig", "RIGHT_SHIFT",
             "HikariTweaks の設定画面を開きます。"
     );
+    // スコアボードの次ページへ切り替えるホットキー
     public static final ConfigHotkey SCOREBOARD_NEXT_PAGE = new ConfigHotkey(
             "scoreboardNextPage", "",
             "スコアボードの次のページへ切り替えます。"
     );
+    // スコアボードの前ページへ切り替えるホットキー
     public static final ConfigHotkey SCOREBOARD_PREV_PAGE = new ConfigHotkey(
             "scoreboardPrevPage", "",
             "スコアボードの前のページへ切り替えます。"
@@ -117,10 +126,14 @@ public final class TweaksOptions {
         SCOREBOARD_PREV_PAGE.setValueChangeCallback(c -> onConfigChanged());
     }
 
+    // インスタンス化を禁止するプライベートコンストラクタ
     private TweaksOptions() {}
 
+    // 補助機能タブの設定リストを返す
     public static List<IConfigBase> utility() { return UTILITY; }
+    // リストタブの設定リストを返す
     public static List<IConfigBase> lists()   { return LISTS; }
+    // ホットキータブの設定リストを返す
     public static List<IConfigBase> hotkeys() { return HOTKEYS_LIST; }
 
     // malilib の HotkeyProvider に渡す全ホットキーリスト
@@ -140,9 +153,12 @@ public final class TweaksOptions {
 
     // 設定ファイルから読み込んだ値を各オプションへ反映する
     public static void loadFromConfig(ClientConfig config) {
+        // 正規化して範囲外の値を修正する
         config.normalize();
+        // コールバックによる二重保存を防ぐためフラグを立てる
         loadingFromConfig = true;
         try {
+            // 各オプションの boolean 値とホットキーを設定ファイルの値で上書きする
             FIX_BEACON_RANGE_FREE_CAM.setBooleanValue(config.fixBeaconRangeFreeCam);
             FIX_BEACON_RANGE_FREE_CAM.getKeybind().setValueFromString(config.fixBeaconRangeFreeCamHotkey);
             DURABILITY_WARNING_ENABLED.setBooleanValue(config.durabilityWarningEnabled);
@@ -161,12 +177,14 @@ public final class TweaksOptions {
             SCOREBOARD_NEXT_PAGE.getKeybind().setValueFromString(config.scoreboardNextPageHotkey);
             SCOREBOARD_PREV_PAGE.getKeybind().setValueFromString(config.scoreboardPrevPageHotkey);
         } finally {
+            // 必ずフラグを解除してコールバックが正常動作するようにする
             loadingFromConfig = false;
         }
     }
 
     // 現在の各オプション値を設定ファイル用データクラスへ書き出す
     public static void writeToConfig(ClientConfig config) {
+        // 各オプションの boolean 値とホットキーを config フィールドへ書き込む
         config.fixBeaconRangeFreeCam          = FIX_BEACON_RANGE_FREE_CAM.getBooleanValue();
         config.fixBeaconRangeFreeCamHotkey    = FIX_BEACON_RANGE_FREE_CAM.getKeybind().getStringValue();
         config.durabilityWarningEnabled       = DURABILITY_WARNING_ENABLED.getBooleanValue();
@@ -184,15 +202,18 @@ public final class TweaksOptions {
         config.openConfigHotkey               = OPEN_CONFIG.getKeybind().getStringValue();
         config.scoreboardNextPageHotkey       = SCOREBOARD_NEXT_PAGE.getKeybind().getStringValue();
         config.scoreboardPrevPageHotkey       = SCOREBOARD_PREV_PAGE.getKeybind().getStringValue();
+        // 書き込み後に正規化して範囲外の値を修正する
         config.normalize();
     }
 
+    // 実行時設定を config に反映するヘルパー
     public static void applyRuntimeConfig() {
         writeToConfig(ClientConfigManager.config);
     }
 
     // 設定値が変更されたときに呼ばれる。loadFromConfig() 中は保存をスキップする。
     private static void onConfigChanged() {
+        // 読み込み中は二重保存を防ぐためスキップする
         if (loadingFromConfig) return;
         if (ClientConfigManager.config != null) {
             applyRuntimeConfig();
