@@ -26,7 +26,7 @@ public class HikariTweaksClient implements ClientModInitializer {
     // MOD の識別子・表示名・バージョン定数
     public static final String MOD_ID      = "hikari-tweaks";
     public static final String MOD_NAME    = "Hikari-Tweaks";
-    public static final String MOD_VERSION = "1.0.7";
+    public static final String MOD_VERSION = "1.0.8";
 
     // FabricLoader から取得したバージョン文字列のキャッシュ
     private static String cachedVersion;
