@@ -9,7 +9,6 @@ import com.hikariserver.hikaritweaks.restock.HandRestockHandler;
 import com.hikariserver.hikaritweaks.restock.TotemRestockHandler;
 import com.hikariserver.hikaritweaks.scoreboard.ScoreboardHudRenderer;
 import com.hikariserver.hikaritweaks.scoreboard.ScoreboardPacketClient;
-import com.hikariserver.hikaritweaks.update.UpdateCheckerService;
 import com.hikariserver.hikaritweaks.warning.DurabilityWarningHandler;
 import fi.dy.masa.malilib.config.ConfigManager;
 import fi.dy.masa.malilib.event.InputEventHandler;
@@ -26,7 +25,7 @@ public class HikariTweaksClient implements ClientModInitializer {
     // MOD の識別子・表示名・バージョン定数
     public static final String MOD_ID      = "hikari-tweaks";
     public static final String MOD_NAME    = "Hikari-Tweaks";
-    public static final String MOD_VERSION = "1.0.8";
+    public static final String MOD_VERSION = "1.0.9";
 
     // FabricLoader から取得したバージョン文字列のキャッシュ
     private static String cachedVersion;
@@ -46,9 +45,8 @@ public class HikariTweaksClient implements ClientModInitializer {
         InputEventHandler.getKeybindManager().registerKeybindProvider(HikariTweaksHotkeyProvider.INSTANCE);
         InputEventHandler.getKeybindManager().updateUsedKeys();
 
-        // スコアボードパケット受信の登録とアップデートチェッカーの起動
+        // スコアボードパケット受信の登録
         ScoreboardPacketClient.register();
-        UpdateCheckerService.start();
 
         // 毎 tick 処理の登録
         ClientTickEvents.END_CLIENT_TICK.register(AutoRestockHotbarHandler::tick);
@@ -62,7 +60,6 @@ public class HikariTweaksClient implements ClientModInitializer {
             ScoreboardPacketClient.setOnListUpdated(null);
             ScoreboardPacketClient.setOnRankingUpdated(null);
             ScoreboardPacketClient.resetHiddenState();
-            UpdateCheckerService.onDisconnect();
             LitematicaAutoRefreshHandler.reset();
         });
 
@@ -70,7 +67,6 @@ public class HikariTweaksClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             ScoreboardPacketClient.resetHiddenState();
             ScoreboardHudRenderer.resetPage();
-            UpdateCheckerService.onJoin(client);
             // プレイヤーが存在するときのみバージョン通知メッセージを送信する
             if (client.player != null) {
                 client.player.sendMessage(

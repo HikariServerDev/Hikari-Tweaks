@@ -72,25 +72,7 @@ public class ClientConfig {
     public int     scoreboardSelfColor      = 0xFFFFFF55;
     // サーバー全体の合計スコアを表示するフラグ
     public boolean scoreboardShowServerTotal = true;
-
-    // ── アップデートチェッカー ─────────────────────────────
-    // アップデートチェックの有効フラグ
-    public boolean updateCheckerEnabled          = true;
-    // JOIN 時に通知するフラグ
-    public boolean updateNotifyOnJoin            = true;
-    // プレリリースも含めてチェックするフラグ
-    public boolean updateIncludePrerelease        = false;
-    // チェック間隔（分）
-    public int     updateCheckIntervalMinutes     = 360;
-    // GitHub リポジトリのオーナー名とリポジトリ名
-    public String  updateGithubOwner             = "Tamago0314";
-    public String  updateGithubRepo              = "Hikari-Tweaks";
-    // リリース URL の上書き（空文字は GitHub デフォルト URL を使用）
-    public String  updateReleaseUrlOverride       = "";
-    // 最後にチェックした時刻（Unix ミリ秒）
-    public long    updateLastCheckedAt            = 0L;
-    // 最後に通知したバージョン（重複通知防止）
-    public String  updateLastNotifiedVersion      = "";
+    // (Update Checker 関連フィールドは廃止されました)
 
     // null ガードと数値の範囲チェックを行う。ロード後に必ず呼ぶこと。
     public void normalize() {
@@ -101,22 +83,12 @@ public class ClientConfig {
         if (scoreboardPrevPageHotkey == null) scoreboardPrevPageHotkey = "";
         if (autoLitematicaRefreshHotkey == null) autoLitematicaRefreshHotkey = "";
         if (handRestockHotkey == null)      handRestockHotkey = "";
-        if (updateGithubOwner == null)      updateGithubOwner = "Tamago0314";
-        if (updateGithubRepo == null)       updateGithubRepo  = "Hikari-Tweaks";
-        if (updateReleaseUrlOverride == null) updateReleaseUrlOverride = "";
-        if (updateLastNotifiedVersion == null) updateLastNotifiedVersion = "";
 
         // 各数値を許容範囲内に収める
         scoreboardPageSize  = Math.max(1, Math.min(50, scoreboardPageSize));
         scoreboardPositionX = Math.max(0, Math.min(100, scoreboardPositionX));
         scoreboardPositionY = Math.max(0, Math.min(100, scoreboardPositionY));
         scoreboardScale     = Math.max(0.5f, Math.min(3.0f, scoreboardScale));
-        updateCheckIntervalMinutes = Math.max(5, Math.min(7 * 24 * 60, updateCheckIntervalMinutes));
-
-        // 文字列フィールドの前後空白を除去する
-        updateGithubOwner        = updateGithubOwner.trim();
-        updateGithubRepo         = updateGithubRepo.trim();
-        updateReleaseUrlOverride = updateReleaseUrlOverride.trim();
     }
 
     // 旧バージョンの設定ファイルを最新スキーマへ段階移行する。
@@ -138,17 +110,8 @@ public class ClientConfig {
             scoreboardShowServerTotal = true;
             configVersion = 1;
         }
-        // v1 → v2: アップデートチェッカー設定を追加する
+        // v1 → v2: (Update Checker 設定を追加していたが v1.0.9 で廃止。configVersion だけ上げる)
         if (configVersion < 2) {
-            updateCheckerEnabled       = true;
-            updateNotifyOnJoin         = true;
-            updateIncludePrerelease    = false;
-            updateCheckIntervalMinutes = 360;
-            updateGithubOwner          = "Tamago0314";
-            updateGithubRepo           = "Hikari-Tweaks";
-            updateReleaseUrlOverride   = "";
-            updateLastCheckedAt        = 0L;
-            updateLastNotifiedVersion  = "";
             configVersion = 2;
         }
         // v2 → v3: スコアボードページ切り替えホットキーを追加する

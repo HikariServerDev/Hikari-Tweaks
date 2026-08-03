@@ -15,7 +15,11 @@
 
 ---
 
-現在バージョン: **v1.0.8**
+現在バージョン: **v1.0.9**
+
+更新履歴（v1.0.9）:
+- Update Checker (GitHub Releases) 機能を削除
+- Mod アイコンを差し替え
 
 Minecraft 1.18.2 向けの **Fabric クライアントサイド Mod** です。  
 Hikari 環境で使う便利機能をまとめています。
@@ -243,25 +247,3 @@ Apache-2.0
 
   コンテナ開閉時のホットバー自動補充機能の設計アイデアを参考にしました。
 
----
-
-## 13. Update Checker (GitHub Releases)
-
-Hikari-Tweaks には、GitHub Releases の新バージョンを確認してゲーム参加時に通知する機能があります。
-
-設定ファイル: `config/hikari-tweaks.json`
-
-主な項目:
-
-- `updateCheckerEnabled`: 更新チェックを有効化
-- `updateNotifyOnJoin`: 参加時に通知
-- `updateCheckIntervalMinutes`: チェック間隔（分）
-- `updateIncludePrerelease`: pre-release も対象にするか
-- `updateGithubOwner`: GitHub owner（例: `Tamago0314`）
-- `updateGithubRepo`: GitHub repository（例: `Hikari-Tweaks`）
-- `updateReleaseUrlOverride`: 通知リンクを固定したい場合のURL（空ならGitHub Release URLを自動使用）
-
-推奨:
-
-- 通常運用: `updateIncludePrerelease = false`
-- テスト配布も追いたい場合のみ `true`

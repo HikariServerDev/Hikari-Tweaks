@@ -17,8 +17,9 @@ public final class ScoreboardPacketClient {
     private static final Identifier PLAYER_LIST_REQUEST  = new Identifier("hikariscoreboard", "player_list_request");
     private static final Identifier PLAYER_LIST_RESPONSE = new Identifier("hikariscoreboard", "player_list_response");
     private static final Identifier BLOCK_TOGGLE         = new Identifier("hikariscoreboard", "block_toggle");
-    // Server → Client: バニラサイドバーの表示/非表示をクライアントに指示（Hikari-Tweaks連携）
-    private static final Identifier VANILLA_SIDEBAR_CONTROL = new Identifier("hikariscoreboard", "vanilla_sidebar_control");
+    // 旧 VANILLA_SIDEBAR_CONTROL チャネルは廃止。
+    // HikariScoreBoard v1.4.3 以降、サーバーは Tweaks 検知時にバニラ Objective を
+    // 送らなくなったため、クライアント側で隠す必要が無くなった。
 
     // サーバーから受信したプレイヤーリストのキャッシュ
     private static List<PlayerListEntry> cachedList = new ArrayList<>();
@@ -111,18 +112,8 @@ public final class ScoreboardPacketClient {
                     });
                 });
 
-        // HikariScoreBoard から「バニラサイドバーを非表示にする」指示を受信（Hikari-Tweaks 連携）
-        // Hikari-Tweaks がない場合はこのパケットは届かないため副作用なし。
-        // ここでは設定をディスクに保存しない（サーバー指示のたびに書き込むのは不要。
-        // 画面を閉じた際に ClientConfigManager.save() が呼ばれるため永続化は担保される）。
-        ClientPlayNetworking.registerGlobalReceiver(VANILLA_SIDEBAR_CONTROL,
-                (client, handler, buf, responseSender) -> {
-                    boolean hideVanilla = buf.readBoolean();
-                    // MC スレッドで設定値を更新する
-                    client.execute(() -> {
-                        com.hikariserver.hikaritweaks.config.ClientConfigManager.config.scoreboardHideVanilla = hideVanilla;
-                    });
-                });
+        // 旧 VANILLA_SIDEBAR_CONTROL レシーバはここから削除。
+        // HikariScoreBoard v1.4.3 以降は Tweaks 検知時にバニラ Objective を送らないため不要。
     }
 
     // サーバーへプレイヤーリストのリクエストパケットを送信する
