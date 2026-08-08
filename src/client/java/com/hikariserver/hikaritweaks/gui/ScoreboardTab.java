@@ -14,6 +14,7 @@ import fi.dy.masa.malilib.gui.widgets.WidgetSlider;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.math.MatrixStack;
 
 import java.util.ArrayList;
@@ -25,9 +26,10 @@ public final class ScoreboardTab {
 
     // サブタブの列挙型（プレイヤー一覧 / 表示設定）
     private enum SubTab {
-        PLAYERS("プレイヤー"), DISPLAY("表示設定");
-        final String label;
-        SubTab(String l) { label = l; }
+        PLAYERS("hikaritweaks.tab.players"), DISPLAY("hikaritweaks.tab.display");
+        private final String langKey;
+        SubTab(String langKey) { this.langKey = langKey; }
+        String label() { return I18n.translate(langKey); }
     }
 
     // WidgetHost インターフェース：設定画面がボタン・ウィジェットを受け取るための窓口
@@ -130,21 +132,21 @@ public final class ScoreboardTab {
         int bulkY = y + SUBTAB_H + 4;
         // 表示中エントリを全選択するボタン
         selectAllVisibleBtn = host.addButton(
-                new HideableButton(x, bulkY, 68, 16, "§a表示を全選択"),
+                new HideableButton(x, bulkY, 68, 16, "§a" + I18n.translate("hikaritweaks.button.select_shown")),
                 (btn, mb) -> {
                     entries.stream().filter(e -> !e.isBlocked()).forEach(e -> selectedUuids.add(e.uuid()));
                     rebuildRowButtons();
                 });
         // 非表示エントリを全選択するボタン
         selectAllBlockedBtn = host.addButton(
-                new HideableButton(x + 72, bulkY, 68, 16, "§c非表示を全選択"),
+                new HideableButton(x + 72, bulkY, 68, 16, "§c" + I18n.translate("hikaritweaks.button.select_hidden")),
                 (btn, mb) -> {
                     entries.stream().filter(PlayerListEntry::isBlocked).forEach(e -> selectedUuids.add(e.uuid()));
                     rebuildRowButtons();
                 });
         // 選択エントリを一括表示するボタン
         bulkShowBtn = host.addButton(
-                new HideableButton(x + 144, bulkY, 50, 16, "§a一括表示"),
+                new HideableButton(x + 144, bulkY, 50, 16, "§a" + I18n.translate("hikaritweaks.button.show_all")),
                 (btn, mb) -> {
                     if (selectedUuids.isEmpty()) return;
                     for (String uuid : selectedUuids) ScoreboardPacketClient.toggleBlockIfNeeded(uuid, false);
@@ -153,7 +155,7 @@ public final class ScoreboardTab {
                 });
         // 選択エントリを一括非表示にするボタン
         bulkHideBtn = host.addButton(
-                new HideableButton(x + 198, bulkY, 50, 16, "§c一括非表示"),
+                new HideableButton(x + 198, bulkY, 50, 16, "§c" + I18n.translate("hikaritweaks.button.hide_all")),
                 (btn, mb) -> {
                     if (selectedUuids.isEmpty()) return;
                     for (String uuid : selectedUuids) ScoreboardPacketClient.toggleBlockIfNeeded(uuid, true);
@@ -162,7 +164,7 @@ public final class ScoreboardTab {
                 });
         // 選択をすべて解除するボタン
         clearSelectionBtn = host.addButton(
-                new HideableButton(x + 252, bulkY, 44, 16, "§7選択解除"),
+                new HideableButton(x + 252, bulkY, 44, 16, "§7" + I18n.translate("hikaritweaks.button.clear_selection")),
                 (btn, mb) -> {
                     selectedUuids.clear();
                     rebuildRowButtons();
@@ -179,25 +181,25 @@ public final class ScoreboardTab {
 
         // 前ページ・次ページ・先頭へのボタン
         prevPageBtn = host.addButton(new HideableButton(
-                        lx,       dispRowY(1), 58, 16, "◀ 前ページ"),
+                        lx,       dispRowY(1), 58, 16, I18n.translate("hikaritweaks.button.prev_page")),
                 (btn, mb) -> ScoreboardHudRenderer.prevPage());
 
         nextPageBtn = host.addButton(new HideableButton(
-                        lx + 62,  dispRowY(1), 58, 16, "次ページ ▶"),
+                        lx + 62,  dispRowY(1), 58, 16, I18n.translate("hikaritweaks.button.next_page")),
                 (btn, mb) -> ScoreboardHudRenderer.nextPage());
 
         resetPageBtn = host.addButton(new HideableButton(
-                        lx + 124, dispRowY(1), 48, 16, "先頭へ"),
+                        lx + 124, dispRowY(1), 48, 16, I18n.translate("hikaritweaks.button.first_page")),
                 (btn, mb) -> ScoreboardHudRenderer.resetPage());
 
         // 位置調整画面を開くボタン
         posEditorBtn = host.addButton(new HideableButton(
-                        lx,       dispRowY(2), 126, 18, "位置調整画面を開く"),
+                        lx,       dispRowY(2), 126, 18, I18n.translate("hikaritweaks.button.open_position_editor")),
                 (btn, mb) -> MinecraftClient.getInstance().setScreen(new PositionEditorScreen(parent)));
 
         // 色設定画面を開くボタン
         colorPickerBtn = host.addButton(new HideableButton(
-                        lx + 130, dispRowY(2), 110, 18, "色設定画面を開く"),
+                        lx + 130, dispRowY(2), 110, 18, I18n.translate("hikaritweaks.button.open_color_editor")),
                 (btn, mb) -> MinecraftClient.getInstance().setScreen(new ColorPickerScreen(parent)));
 
         // スケールスライダー（0.5–3.0）
@@ -311,7 +313,7 @@ public final class ScoreboardTab {
             // 行表示/非表示トグルボタン（初期位置は OFFSCREEN で後から配置）
             HideableButton btn = host.addButton(
                     new HideableButton(LIST_X + 26, OFFSCREEN, BUTTON_W, ROW_HEIGHT - 2,
-                            entry.isBlocked() ? "§c非表示" : "§a表示中"),
+                            entry.isBlocked() ? "§c" + I18n.translate("hikaritweaks.status.hidden") : "§a" + I18n.translate("hikaritweaks.status.shown")),
                     (b, mb) -> {
                         ScoreboardPacketClient.toggleBlock(entry.uuid());
                         waiting = true;
@@ -371,31 +373,32 @@ public final class ScoreboardTab {
         // アクティブタブは白のアンダーラインを描画する
         Screen.fill(m, bx, by, bx + bw, by + 1, active ? 0xFFFFFFFF : 0x88FFFFFF);
         int textColor = active ? 0xFFFFFF55 : 0xFFCCCCCC;
-        float tx = bx + (bw - tr.getWidth(tab.label)) / 2f;
+        String label = tab.label();
+        float tx = bx + (bw - tr.getWidth(label)) / 2f;
         float ty = by + (bh - 8) / 2f;
-        tr.drawWithShadow(m, tab.label, tx, ty, textColor);
+        tr.drawWithShadow(m, label, tx, ty, textColor);
     }
 
     // プレイヤーリストのコンテンツを描画する
     private void renderPlayersContent(MatrixStack matrices, TextRenderer tr, int mouseX, int mouseY) {
         // 一括操作ボタン行のヘッダー
         int headerY = y + SUBTAB_H + 4;
-        tr.drawWithShadow(matrices, "§e表示名", LIST_X + BUTTON_W + 30,   headerY + 22, 0xFFFFFF);
-        tr.drawWithShadow(matrices, "§7種別",   LIST_X + BUTTON_W + 156, headerY + 22, 0xFFFFFF);
+        tr.drawWithShadow(matrices, "§e" + I18n.translate("hikaritweaks.scoreboard_tab.name_header"), LIST_X + BUTTON_W + 30,   headerY + 22, 0xFFFFFF);
+        tr.drawWithShadow(matrices, "§7" + I18n.translate("hikaritweaks.scoreboard_tab.type_header"), LIST_X + BUTTON_W + 156, headerY + 22, 0xFFFFFF);
         // 選択数表示
         if (!selectedUuids.isEmpty()) {
-            tr.drawWithShadow(matrices, "§e" + selectedUuids.size() + "件選択中",
+            tr.drawWithShadow(matrices, "§e" + String.format(I18n.translate("hikaritweaks.scoreboard_tab.selected_count"), selectedUuids.size()),
                     x + width - BUTTON_W - 60, headerY + 4, 0xFFFFAA);
         }
 
         // サーバーリクエスト中は待機メッセージを表示して早期リターンする
         if (waiting) {
-            drawCentered(matrices, tr, "§7サーバーから取得中...", x + width / 2, y + height / 2, 0xAAAAAA);
+            drawCentered(matrices, tr, "§7" + I18n.translate("hikaritweaks.scoreboard_tab.loading"), x + width / 2, y + height / 2, 0xAAAAAA);
             return;
         }
         // データが空のときは案内メッセージを表示する
         if (entries.isEmpty()) {
-            drawCentered(matrices, tr, "§7プレイヤーデータなし", x + width / 2, y + height / 2, 0xAAAAAA);
+            drawCentered(matrices, tr, "§7" + I18n.translate("hikaritweaks.scoreboard_tab.no_data"), x + width / 2, y + height / 2, 0xAAAAAA);
             return;
         }
 
@@ -434,7 +437,7 @@ public final class ScoreboardTab {
             // カテゴリヘッダーが表示領域内にあるときだけ描画する
             if (catY + CATEGORY_H >= listTop && catY <= listBottom) {
                 Screen.fill(matrices, x, catY, x + width, catY + CATEGORY_H, 0x44AAFFAA);
-                tr.drawWithShadow(matrices, "§a■ 表示中 (" + visibleEntries.size() + ")", LIST_X + 2, catY + 3, 0xAAFFAA);
+                tr.drawWithShadow(matrices, "§a" + String.format(I18n.translate("hikaritweaks.scoreboard_tab.shown_group"), visibleEntries.size()), LIST_X + 2, catY + 3, 0xAAFFAA);
             }
             drawY += CATEGORY_H;
 
@@ -449,7 +452,7 @@ public final class ScoreboardTab {
                     if (inView) {
                         // 可視行のボタンを実際の Y 座標へ移動する
                         btn.setY(rowY + 1);
-                        btn.setDisplayString("§a表示中");
+                        btn.setDisplayString("§a" + I18n.translate("hikaritweaks.status.shown"));
                         if (selBtn != null) {
                             selBtn.setY(rowY + 1);
                             selBtn.setDisplayString(selectedUuids.contains(entry.uuid()) ? "§e☑" : "§7☐");
@@ -467,7 +470,7 @@ public final class ScoreboardTab {
                 if (i % 2 == 0) Screen.fill(matrices, x, rowY, x + width, rowY + ROW_HEIGHT, 0x18FFFFFF);
                 String name = truncate(entry.displayName(), 20);
                 tr.drawWithShadow(matrices, name, LIST_X + BUTTON_W + 30, rowY + 6, 0xFFFFFF);
-                tr.drawWithShadow(matrices, entry.isBot() ? "§6[Bot]" : "§7[人]", LIST_X + BUTTON_W + 156, rowY + 6, 0xFFFFFF);
+                tr.drawWithShadow(matrices, entry.isBot() ? "§6" + I18n.translate("hikaritweaks.scoreboard_tab.bot") : "§7" + I18n.translate("hikaritweaks.scoreboard_tab.player"), LIST_X + BUTTON_W + 156, rowY + 6, 0xFFFFFF);
             }
             drawY += visibleEntries.size() * ROW_HEIGHT;
         }
@@ -477,7 +480,7 @@ public final class ScoreboardTab {
             int catY = drawY;
             if (catY + CATEGORY_H >= listTop && catY <= listBottom) {
                 Screen.fill(matrices, x, catY, x + width, catY + CATEGORY_H, 0x44FF8888);
-                tr.drawWithShadow(matrices, "§c■ 非表示 (" + blockedEntries.size() + ")", LIST_X + 2, catY + 3, 0xFFAAAA);
+                tr.drawWithShadow(matrices, "§c" + String.format(I18n.translate("hikaritweaks.scoreboard_tab.hidden_group"), blockedEntries.size()), LIST_X + 2, catY + 3, 0xFFAAAA);
             }
             drawY += CATEGORY_H;
 
@@ -491,7 +494,7 @@ public final class ScoreboardTab {
                     HideableButton selBtn = selectButtons.size() > rowBtnIndex ? selectButtons.get(rowBtnIndex) : null;
                     if (inView) {
                         btn.setY(rowY + 1);
-                        btn.setDisplayString("§c非表示");
+                        btn.setDisplayString("§c" + I18n.translate("hikaritweaks.status.hidden"));
                         if (selBtn != null) {
                             selBtn.setY(rowY + 1);
                             selBtn.setDisplayString(selectedUuids.contains(entry.uuid()) ? "§e☑" : "§7☐");
@@ -508,7 +511,7 @@ public final class ScoreboardTab {
                 String name = truncate(entry.displayName(), 20);
                 // 非表示エントリは名前をグレーで表示する
                 tr.drawWithShadow(matrices, name, LIST_X + BUTTON_W + 30, rowY + 6, 0x666666);
-                tr.drawWithShadow(matrices, entry.isBot() ? "§6[Bot]" : "§7[人]", LIST_X + BUTTON_W + 156, rowY + 6, 0xFFFFFF);
+                tr.drawWithShadow(matrices, entry.isBot() ? "§6" + I18n.translate("hikaritweaks.scoreboard_tab.bot") : "§7" + I18n.translate("hikaritweaks.scoreboard_tab.player"), LIST_X + BUTTON_W + 156, rowY + 6, 0xFFFFFF);
             }
         }
 
@@ -546,7 +549,7 @@ public final class ScoreboardTab {
         int lx = x + 8;
 
         // ページサイズのラベルを描画する
-        tr.drawWithShadow(matrices, "ページサイズ:", lx, dispRowY(0) + 4, 0xFFFFFF);
+        tr.drawWithShadow(matrices, I18n.translate("hikaritweaks.scoreboard_tab.page_size_label"), lx, dispRowY(0) + 4, 0xFFFFFF);
 
         // ランキング情報行（合計人数とページ番号）を描画する
         int infoY = dispRowY(0) + ROW_HEIGHT + 4;
@@ -555,7 +558,7 @@ public final class ScoreboardTab {
         int page  = ScoreboardHudRenderer.getCurrentPage();
         int maxP  = ScoreboardHudRenderer.getMaxPage(total, cfg.scoreboardPageSize);
         tr.drawWithShadow(matrices,
-                "ランキング: " + total + "人   ページ: " + (page + 1) + "/" + (maxP + 1),
+                String.format(I18n.translate("hikaritweaks.scoreboard_tab.ranking_summary"), total, page + 1, maxP + 1),
                 lx, infoY, 0xAAAAAA);
 
         // 区切り線を描画する
@@ -563,7 +566,7 @@ public final class ScoreboardTab {
         Screen.fill(matrices, x, divY, x + width, divY + 1, 0x44FFFFFF);
 
         // スケールと位置情報のラベルを描画する
-        tr.drawWithShadow(matrices, "スケール:", lx, dispRowY(3) + 4, 0xFFFFFF);
+        tr.drawWithShadow(matrices, I18n.translate("hikaritweaks.scoreboard_tab.scale_label"), lx, dispRowY(3) + 4, 0xFFFFFF);
         tr.drawWithShadow(matrices,
                 String.format("X:%d%%  Y:%d%%",
                         cfg.scoreboardPositionX, cfg.scoreboardPositionY),
@@ -819,7 +822,7 @@ public final class ScoreboardTab {
         // スライダーに表示する書式化済み文字列を返す
         @Override
         public String getFormattedDisplayValue() {
-            return "ページサイズ: " + cfg.scoreboardPageSize;
+            return String.format(I18n.translate("hikaritweaks.scoreboard_tab.page_size_value"), cfg.scoreboardPageSize);
         }
     }
 }

@@ -243,9 +243,12 @@ public class HikariTweaksConfigScreen extends GuiConfigsBase
 
     // タブの列挙型。表示名を保持する。
     private enum ConfigGuiTab {
-        TWEAKS("補助機能"), LISTS("リスト"), HOTKEYS("ホットキー"), SCOREBOARD("スコアボード");
-        private final String displayName;
-        ConfigGuiTab(String d) { this.displayName = d; }
-        public String getDisplayName() { return displayName; }
+        TWEAKS("hikaritweaks.tab.tweaks"),
+        LISTS("hikaritweaks.tab.lists"),
+        HOTKEYS("hikaritweaks.tab.hotkeys"),
+        SCOREBOARD("hikaritweaks.tab.scoreboard");
+        private final String langKey;
+        ConfigGuiTab(String langKey) { this.langKey = langKey; }
+        public String getDisplayName() { return net.minecraft.client.resource.language.I18n.translate(langKey); }
     }
 }

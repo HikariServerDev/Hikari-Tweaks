@@ -8,6 +8,7 @@ import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 
@@ -25,14 +26,15 @@ public final class ColorPickerScreen extends Screen {
 
     // 編集対象の色を表す列挙型
     public enum Target {
-        HEADER ("ヘッダー背景"),
-        BODY   ("本文背景"),
-        TEXT   ("テキスト"),
-        SCORE  ("スコア数値"),
-        SELF   ("自分強調");
+        HEADER ("hikaritweaks.color.header_bg"),
+        BODY   ("hikaritweaks.color.body_bg"),
+        TEXT   ("hikaritweaks.color.text"),
+        SCORE  ("hikaritweaks.color.score"),
+        SELF   ("hikaritweaks.color.self_highlight");
 
-        public final String label;
-        Target(String label) { this.label = label; }
+        private final String langKey;
+        Target(String langKey) { this.langKey = langKey; }
+        public String label() { return I18n.translate(langKey); }
     }
 
     // スライダーの横幅
@@ -55,7 +57,7 @@ public final class ColorPickerScreen extends Screen {
 
     // 親画面を受け取り、設定から初期色を読み込む
     public ColorPickerScreen(Screen parent) {
-        super(new LiteralText("スコアボード色設定"));
+        super(new LiteralText(I18n.translate("hikaritweaks.color.screen_title")));
         this.parent = parent;
         ClientConfig cfg = ClientConfigManager.config;
         // 設定から各色をコピーして編集用バッファを作る
@@ -92,7 +94,7 @@ public final class ColorPickerScreen extends Screen {
             // アクティブなターゲットは黄色文字で強調する
             addDrawableChild(new ButtonWidget(
                     bx, 30, tabW - 2, 14,
-                    new LiteralText(active ? "§e" + t.label : t.label),
+                    new LiteralText(active ? "§e" + t.label() : t.label()),
                     btn -> { activeTarget = t; rebuildWidgets(); }
             ));
         }
@@ -113,7 +115,15 @@ public final class ColorPickerScreen extends Screen {
         addDrawableChild(sliderB);
 
         // プリセット色ボタンを横並びで生成する
-        String[] presetLabels  = {"白", "黒", "半透明黒", "赤", "緑", "黄", "水色"};
+        String[] presetLabels  = {
+                I18n.translate("hikaritweaks.color.preset.white"),
+                I18n.translate("hikaritweaks.color.preset.black"),
+                I18n.translate("hikaritweaks.color.preset.translucent"),
+                I18n.translate("hikaritweaks.color.preset.red"),
+                I18n.translate("hikaritweaks.color.preset.green"),
+                I18n.translate("hikaritweaks.color.preset.yellow"),
+                I18n.translate("hikaritweaks.color.preset.cyan")
+        };
         int[]    presetColors  = {0xFFFFFFFF, 0xFF000000, 0x66000000, 0xFFFF5555, 0xFF55FF55, 0xFFFFFF55, 0xFF55FFFF};
         int pw = 24, ph = 14, gap = 4;
         int totalW = presetLabels.length * (pw + gap) - gap;
@@ -132,7 +142,7 @@ public final class ColorPickerScreen extends Screen {
         // 保存ボタン：スライダー値を保存して親画面へ戻る
         addDrawableChild(new ButtonWidget(
                 cx - 105, height - 28, 100, 20,
-                new LiteralText("§a保存して戻る"),
+                new LiteralText("§a" + I18n.translate("hikaritweaks.button.save_back")),
                 btn -> {
                     saveAll();
                     if (client != null) client.setScreen(parent);
@@ -141,7 +151,7 @@ public final class ColorPickerScreen extends Screen {
         // キャンセルボタン：保存せず親画面へ戻る
         addDrawableChild(new ButtonWidget(
                 cx + 5, height - 28, 100, 20,
-                new LiteralText("§cキャンセル"),
+                new LiteralText("§c" + I18n.translate("hikaritweaks.button.cancel")),
                 btn -> { if (client != null) client.setScreen(parent); }
         ));
     }
@@ -180,7 +190,7 @@ public final class ColorPickerScreen extends Screen {
 
         // タイトルを中央揃えで描画する
         TextRenderer tr2 = MinecraftClient.getInstance().textRenderer;
-        String titleStr = "§e色設定 — " + activeTarget.label;
+        String titleStr = "§e" + I18n.translate("hikaritweaks.color.title_prefix") + activeTarget.label();
         tr2.drawWithShadow(matrices, titleStr, (width - tr2.getWidth(titleStr)) / 2f, 14, 0xFFFFFF);
 
         // カラープレビューパネルを描画する（上: 保存済み色、下: 現在のスライダー値）
@@ -196,8 +206,8 @@ public final class ColorPickerScreen extends Screen {
                 previewX + PREVIEW_SIZE, previewY + PREVIEW_SIZE * 2 + 2, liveColor);
 
         TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-        tr.drawWithShadow(matrices, "保存済", previewX, previewY + PREVIEW_SIZE + PREVIEW_SIZE + 6, 0xAAAAAA);
-        tr.drawWithShadow(matrices, "現在値", previewX, previewY + PREVIEW_SIZE * 2 + 10, 0xFFFFFF);
+        tr.drawWithShadow(matrices, I18n.translate("hikaritweaks.color.saved"),   previewX, previewY + PREVIEW_SIZE + PREVIEW_SIZE + 6, 0xAAAAAA);
+        tr.drawWithShadow(matrices, I18n.translate("hikaritweaks.color.current"), previewX, previewY + PREVIEW_SIZE * 2 + 10, 0xFFFFFF);
 
         // 現在の ARGB 値を16進数で表示する
         tr.drawWithShadow(matrices,

@@ -8,6 +8,7 @@ import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 
@@ -42,7 +43,7 @@ public final class PositionEditorScreen extends Screen {
 
     // 親画面を受け取り、設定から初期位置とスケールを読み込む
     public PositionEditorScreen(Screen parent) {
-        super(new LiteralText("スコアボード位置調整"));
+        super(new LiteralText(I18n.translate("hikaritweaks.position.title")));
         this.parent    = parent;
         ClientConfig cfg = ClientConfigManager.config;
         this.tempX     = cfg.scoreboardPositionX;
@@ -66,7 +67,7 @@ public final class PositionEditorScreen extends Screen {
         // 確定ボタン：tempX/Y/Scale を設定に書き込んで保存する
         addDrawableChild(new ButtonWidget(
                 width / 2 - 105, height - 42, 100, 20,
-                new LiteralText("§a確定"),
+                new LiteralText("§a" + I18n.translate("hikaritweaks.button.confirm")),
                 btn -> {
                     ClientConfig cfg = ClientConfigManager.config;
                     cfg.scoreboardPositionX = tempX;
@@ -80,7 +81,7 @@ public final class PositionEditorScreen extends Screen {
         // キャンセルボタン：変更を破棄して親画面へ戻る
         addDrawableChild(new ButtonWidget(
                 width / 2 + 5, height - 42, 100, 20,
-                new LiteralText("§cキャンセル"),
+                new LiteralText("§c" + I18n.translate("hikaritweaks.button.cancel")),
                 btn -> close()
         ));
     }
@@ -92,10 +93,10 @@ public final class PositionEditorScreen extends Screen {
 
         // 操作説明テキストを描画する
         TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-        String msg1 = "§eスコアボードをドラッグして位置を調整できます";
+        String msg1 = "§e" + I18n.translate("hikaritweaks.position.drag_hint");
         tr.drawWithShadow(matrices, msg1, (width - tr.getWidth(msg1)) / 2f, 12, 0xFFFFFF);
         // 現在のスケール値を表示する
-        String msg2 = "§7スケール: " + String.format("%.2f", tempScale) + "x";
+        String msg2 = "§7" + I18n.translate("hikaritweaks.position.scale_prefix") + String.format("%.2f", tempScale) + "x";
         tr.drawWithShadow(matrices, msg2, width / 2f + 110, height - 63, 0xFFFFFF);
 
         // スコアボードのプレビューを描画する
@@ -109,7 +110,7 @@ public final class PositionEditorScreen extends Screen {
     // プレビュー用ダミーデータを使ってスコアボードを描画する
     private void renderPreview(MatrixStack matrices, int mouseX, int mouseY) {
         // プレビュー用ダミーデータ
-        String title = "スコアボード";
+        String title = I18n.translate("hikaritweaks.position.scoreboard_label");
         String[] names  = {"Player1", "Player2", "Player3", "Player4", "Player5"};
         int[]    scores = {1234, 987, 756, 543, 210};
 
@@ -274,7 +275,7 @@ public final class PositionEditorScreen extends Screen {
         @Override
         protected void updateMessage() {
             setMessage(new LiteralText(
-                    "スケール: " + String.format("%.2f", tempScale) + "x"));
+                    I18n.translate("hikaritweaks.position.scale_prefix") + String.format("%.2f", tempScale) + "x"));
         }
 
         // 0–1 の相対値を 0.5–3.0 のスケール値に変換して tempScale に反映する

@@ -19,35 +19,38 @@ public final class TweaksOptions {
     // ── 補助機能 ───────────────────────────────────────────────────────────────
 
     // MiniHUD フリーカメラ時のビーコン範囲をプレイヤー位置基準に修正するオプション
+    // NOTE: MaLiLib は prettyName を StringUtils.translate() で自動翻訳し、
+    // comment は "config.comment.<name.lower>" キーを自動 lookup する。
+    // よって prettyName に lang キーを渡せば Minecraft の言語設定に追従する。
     public static final ConfigBooleanHotkeyed FIX_BEACON_RANGE_FREE_CAM = new ConfigBooleanHotkeyed(
             "fixBeaconRangeFreeCam", true, "",
-            "MiniHUD フリーカメラ時のビーコン範囲をプレイヤー位置基準に修正します。",
-            "MiniHUD 補正"
+            "",
+            "config.name.fixbeaconrangefreecam"
     );
     // 耐久値 1% 以下になったときにチャットへ警告を出すオプション
     public static final ConfigBooleanHotkeyed DURABILITY_WARNING_ENABLED = new ConfigBooleanHotkeyed(
             "durabilityWarningEnabled", true, "",
-            "耐久値が 1% 以下になったときにチャットへ警告を出します。",
-            "耐久値警告"
+            "",
+            "config.name.durabilitywarningenabled"
     );
     // コンテナを開いた時にホットバーへ自動補充するオプション
     public static final ConfigBooleanHotkeyed AUTO_RESTOCK_HOTBAR = new ConfigBooleanHotkeyed(
             "autoRestockHotbar", false, "",
-            "チェストなどのコンテナを開いた時、設定リストのアイテムをホットバーへ補充します。",
-            "ホットバー自動補充"
+            "",
+            "config.name.autorestockhotbar"
     );
     // 使われたトーテムをインベントリから補充するオプション
     public static final ConfigBooleanHotkeyed TOTEM_RESTOCK = new ConfigBooleanHotkeyed(
             "totemRestock", false, "",
-            "使用された不死のトーテムをインベントリから探して、使っていた手へ補充します。",
-            "トーテム補充"
+            "",
+            "config.name.totemrestock"
     );
     // (Litematica 自動 Refresh は v1.0.10 で削除)
     // Tweakeroo handrestock 相当。リストのアイテムが 5 個以下になったらインベントリから自動補充する。
     public static final ConfigBooleanHotkeyed HAND_RESTOCK = new ConfigBooleanHotkeyed(
             "handRestock", false, "",
-            "リスト内のアイテムがホットバーで 5 個以下になったとき、インベントリから自動補充します。",
-            "手持ち自動補充"
+            "",
+            "config.name.handrestock"
     );
 
     // ── リスト ─────────────────────────────────────────────────────────────────
@@ -56,13 +59,13 @@ public final class TweaksOptions {
     public static final ConfigStringList HOTBAR_RESTOCK_LIST = new ConfigStringList(
             "hotbarRestockList",
             ImmutableList.of("minecraft:firework_rocket", "minecraft:golden_carrot"),
-            "ホットバー自動補充の対象アイテム ID 一覧です。"
+            ""
     );
     // 手持ち自動補充の対象アイテム ID リスト
     public static final ConfigStringList HAND_RESTOCK_LIST = new ConfigStringList(
             "handRestockList",
             ImmutableList.of(),
-            "手持ち自動補充の対象アイテム ID 一覧です。"
+            ""
     );
 
     // ── ホットキー ─────────────────────────────────────────────────────────────
@@ -70,17 +73,20 @@ public final class TweaksOptions {
     // 設定画面を開くホットキー（デフォルト: 右シフト）
     public static final ConfigHotkey OPEN_CONFIG = new ConfigHotkey(
             "openConfig", "RIGHT_SHIFT",
-            "HikariTweaks の設定画面を開きます。"
+            "",
+            "config.name.openconfig"
     );
     // スコアボードの次ページへ切り替えるホットキー
     public static final ConfigHotkey SCOREBOARD_NEXT_PAGE = new ConfigHotkey(
             "scoreboardNextPage", "",
-            "スコアボードの次のページへ切り替えます。"
+            "",
+            "config.name.scoreboardnextpage"
     );
     // スコアボードの前ページへ切り替えるホットキー
     public static final ConfigHotkey SCOREBOARD_PREV_PAGE = new ConfigHotkey(
             "scoreboardPrevPage", "",
-            "スコアボードの前のページへ切り替えます。"
+            "",
+            "config.name.scoreboardprevpage"
     );
 
     // ── タブ別グループ ─────────────────────────────────────────────────────────
