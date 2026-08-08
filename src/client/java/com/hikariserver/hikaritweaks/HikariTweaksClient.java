@@ -3,7 +3,6 @@ package com.hikariserver.hikaritweaks;
 import com.hikariserver.hikaritweaks.config.ClientConfigManager;
 import com.hikariserver.hikaritweaks.config.HotkeyCallbacks;
 import com.hikariserver.hikaritweaks.hotkey.HikariTweaksHotkeyProvider;
-import com.hikariserver.hikaritweaks.litematica.LitematicaAutoRefreshHandler;
 import com.hikariserver.hikaritweaks.restock.AutoRestockHotbarHandler;
 import com.hikariserver.hikaritweaks.restock.HandRestockHandler;
 import com.hikariserver.hikaritweaks.restock.TotemRestockHandler;
@@ -25,7 +24,7 @@ public class HikariTweaksClient implements ClientModInitializer {
     // MOD の識別子・表示名・バージョン定数
     public static final String MOD_ID      = "hikari-tweaks";
     public static final String MOD_NAME    = "Hikari-Tweaks";
-    public static final String MOD_VERSION = "1.0.9";
+    public static final String MOD_VERSION = "1.0.10";
 
     // FabricLoader から取得したバージョン文字列のキャッシュ
     private static String cachedVersion;
@@ -52,7 +51,6 @@ public class HikariTweaksClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(AutoRestockHotbarHandler::tick);
         ClientTickEvents.END_CLIENT_TICK.register(TotemRestockHandler::tick);
         ClientTickEvents.END_CLIENT_TICK.register(DurabilityWarningHandler::tick);
-        ClientTickEvents.END_CLIENT_TICK.register(LitematicaAutoRefreshHandler::tick);
         ClientTickEvents.END_CLIENT_TICK.register(HandRestockHandler::tick);
 
         // サーバーから切断時の後片付け
@@ -60,7 +58,6 @@ public class HikariTweaksClient implements ClientModInitializer {
             ScoreboardPacketClient.setOnListUpdated(null);
             ScoreboardPacketClient.setOnRankingUpdated(null);
             ScoreboardPacketClient.resetHiddenState();
-            LitematicaAutoRefreshHandler.reset();
         });
 
         // サーバー参加時の初期化とバージョン通知

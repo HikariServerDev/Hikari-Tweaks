@@ -42,7 +42,6 @@ dependencies {
     modImplementation("fi.dy.masa.malilib:malilib-fabric-1.18.2:0.12.0") { transitive = false }
     modCompileOnly "maven.modrinth:minihud:0.22.1"
     modCompileOnly "com.terraformersmc:modmenu:3.2.5"
-    modCompileOnly "maven.modrinth:litematica:0.11.2-1.18.2"
 }
 
 processResources {

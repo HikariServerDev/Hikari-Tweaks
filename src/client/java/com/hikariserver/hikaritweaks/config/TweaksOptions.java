@@ -42,12 +42,7 @@ public final class TweaksOptions {
             "使用された不死のトーテムをインベントリから探して、使っていた手へ補充します。",
             "トーテム補充"
     );
-    // Litematica レイヤー変更後にマテリアルリストを自動 Refresh するオプション
-    public static final ConfigBooleanHotkeyed AUTO_LITEMATICA_REFRESH = new ConfigBooleanHotkeyed(
-            "autoLitematicaRefresh", false, "",
-            "Litematica のレイヤー変更後にマテリアルリストを自動で Refresh します（要 Litematica）。",
-            "マテリアルリスト自動Refresh"
-    );
+    // (Litematica 自動 Refresh は v1.0.10 で削除)
     // Tweakeroo handrestock 相当。リストのアイテムが 5 個以下になったらインベントリから自動補充する。
     public static final ConfigBooleanHotkeyed HAND_RESTOCK = new ConfigBooleanHotkeyed(
             "handRestock", false, "",
@@ -96,7 +91,6 @@ public final class TweaksOptions {
             DURABILITY_WARNING_ENABLED,
             AUTO_RESTOCK_HOTBAR,
             TOTEM_RESTOCK,
-            AUTO_LITEMATICA_REFRESH,
             HAND_RESTOCK
     );
     // 「リスト」タブに表示する設定リスト
@@ -117,7 +111,6 @@ public final class TweaksOptions {
         DURABILITY_WARNING_ENABLED.setValueChangeCallback(c -> onConfigChanged());
         AUTO_RESTOCK_HOTBAR.setValueChangeCallback(c -> onConfigChanged());
         TOTEM_RESTOCK.setValueChangeCallback(c -> onConfigChanged());
-        AUTO_LITEMATICA_REFRESH.setValueChangeCallback(c -> onConfigChanged());
         HAND_RESTOCK.setValueChangeCallback(c -> onConfigChanged());
         HOTBAR_RESTOCK_LIST.setValueChangeCallback(c -> onConfigChanged());
         HAND_RESTOCK_LIST.setValueChangeCallback(c -> onConfigChanged());
@@ -143,7 +136,6 @@ public final class TweaksOptions {
                 DURABILITY_WARNING_ENABLED,
                 AUTO_RESTOCK_HOTBAR,
                 TOTEM_RESTOCK,
-                AUTO_LITEMATICA_REFRESH,
                 HAND_RESTOCK,
                 OPEN_CONFIG,
                 SCOREBOARD_NEXT_PAGE,
@@ -167,8 +159,6 @@ public final class TweaksOptions {
             AUTO_RESTOCK_HOTBAR.getKeybind().setValueFromString(config.autoRestockHotbarHotkey);
             TOTEM_RESTOCK.setBooleanValue(config.totemRestock);
             TOTEM_RESTOCK.getKeybind().setValueFromString(config.totemRestockHotkey);
-            AUTO_LITEMATICA_REFRESH.setBooleanValue(config.autoLitematicaRefresh);
-            AUTO_LITEMATICA_REFRESH.getKeybind().setValueFromString(config.autoLitematicaRefreshHotkey);
             HAND_RESTOCK.setBooleanValue(config.handRestock);
             HAND_RESTOCK.getKeybind().setValueFromString(config.handRestockHotkey);
             HOTBAR_RESTOCK_LIST.setStrings(config.hotbarRestockList);
@@ -193,8 +183,6 @@ public final class TweaksOptions {
         config.autoRestockHotbarHotkey        = AUTO_RESTOCK_HOTBAR.getKeybind().getStringValue();
         config.totemRestock                   = TOTEM_RESTOCK.getBooleanValue();
         config.totemRestockHotkey             = TOTEM_RESTOCK.getKeybind().getStringValue();
-        config.autoLitematicaRefresh          = AUTO_LITEMATICA_REFRESH.getBooleanValue();
-        config.autoLitematicaRefreshHotkey    = AUTO_LITEMATICA_REFRESH.getKeybind().getStringValue();
         config.handRestock                    = HAND_RESTOCK.getBooleanValue();
         config.handRestockHotkey              = HAND_RESTOCK.getKeybind().getStringValue();
         config.hotbarRestockList              = new java.util.ArrayList<>(HOTBAR_RESTOCK_LIST.getStrings());

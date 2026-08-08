@@ -24,7 +24,6 @@ public final class HotkeyCallbacks {
         attachToggle(TweaksOptions.DURABILITY_WARNING_ENABLED);
         attachToggle(TweaksOptions.AUTO_RESTOCK_HOTBAR);
         attachToggle(TweaksOptions.TOTEM_RESTOCK);
-        attachToggle(TweaksOptions.AUTO_LITEMATICA_REFRESH);
         attachToggle(TweaksOptions.HAND_RESTOCK);
 
         // 設定画面を開く

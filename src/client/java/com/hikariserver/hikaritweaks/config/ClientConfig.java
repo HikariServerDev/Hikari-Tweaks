@@ -28,9 +28,7 @@ public class ClientConfig {
     public boolean totemRestock = false;
     public String  totemRestockHotkey = "";
 
-    // Litematica 自動 Refresh の有効フラグとホットキー
-    public boolean autoLitematicaRefresh = false;
-    public String  autoLitematicaRefreshHotkey = "";
+    // (Litematica 自動 Refresh 機能は v1.0.10 で削除)
 
     // Tweakeroo handrestock 相当：特定アイテムが 5 個以下になったら自動補充
     public boolean handRestock = false;
@@ -81,7 +79,6 @@ public class ClientConfig {
         if (handRestockList == null)        handRestockList   = new ArrayList<>();
         if (scoreboardNextPageHotkey == null) scoreboardNextPageHotkey = "";
         if (scoreboardPrevPageHotkey == null) scoreboardPrevPageHotkey = "";
-        if (autoLitematicaRefreshHotkey == null) autoLitematicaRefreshHotkey = "";
         if (handRestockHotkey == null)      handRestockHotkey = "";
 
         // 各数値を許容範囲内に収める
@@ -125,10 +122,8 @@ public class ClientConfig {
             // 既存値はそのまま維持（normalize() が上限を担保する）。
             configVersion = 4;
         }
-        // v4 → v5: Litematica 自動 Refresh 設定を追加する
+        // v4 → v5: (Litematica 自動 Refresh 設定を追加していたが v1.0.10 で廃止。configVersion だけ上げる)
         if (configVersion < 5) {
-            autoLitematicaRefresh    = false;
-            autoLitematicaRefreshHotkey = "";
             configVersion = 5;
         }
         // v5 → v6: handRestock 設定を追加する

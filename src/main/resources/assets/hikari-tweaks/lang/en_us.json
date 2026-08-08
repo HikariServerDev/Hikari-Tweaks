@@ -8,8 +8,6 @@
   "config.comment.autorestockhotbar": "When opening a container, restock listed items back into the hotbar.",
   "config.name.totemrestock": "Totem Restock",
   "config.comment.totemrestock": "When a Totem of Undying is used, restock another one into the same hand from the inventory.",
-  "config.name.autolitematicarefresh": "Auto Material List Refresh",
-  "config.comment.autolitematicarefresh": "Automatically refreshes the Litematica material list (requires Litematica).",
   "config.name.hotbarrestocklist": "Hotbar Restock List",
   "config.comment.hotbarrestocklist": "Item IDs used by the auto restock hotbar feature.",
   "config.name.openconfig": "Open Config Screen",

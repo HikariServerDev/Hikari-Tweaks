@@ -1,10 +1,26 @@
 Hikari-Tweaks
-Copyright 2025 Tamago0314
+Copyright (C) 2025-2026 Tamago0314
+Licensed under the GNU Lesser General Public License v3 (LGPL-3.0-or-later).
 
-This product includes code and design references from the following projects:
+Developed at Hikari Server (光鯖) — a Minecraft Java Edition community.
+  https://hikariserver.com
 
 ------------------------------------------------------------------------
-AST-Tweaks by Sim_999_256 / ASTRAL-SMP
+Maintainer
+------------------------------------------------------------------------
+
+  Tamago0314  (https://github.com/Tamago0314)
+
+------------------------------------------------------------------------
+Third-Party References
+------------------------------------------------------------------------
+
+This product includes code and design references from the following projects.
+These acknowledgements are provided for attribution purposes; each referenced
+project remains under its own license as noted below.
+
+------------------------------------------------------------------------
+AST-Tweaks by Sim-hu / ASTRAL-SMP
 Licensed under the Apache License, Version 2.0
 https://github.com/ASTRAL-SMP/AST-Tweaks
 
@@ -21,11 +37,10 @@ https://github.com/pugur523/ama-tweaks
   container open) is inspired by this work.
 
 ------------------------------------------------------------------------
-MaLiLib, MiniHUD, Litematica, Tweakeroo by masa (fi.dy.masa)
+MaLiLib, MiniHUD, Tweakeroo by masa (fi.dy.masa)
 Licensed under the GNU Lesser General Public License v3 (LGPLv3)
 https://github.com/maruohon/
 
   MaLiLib API is used for config, hotkey, and GUI management.
   MiniHUD OverlayRenderer is patched via Mixin for beacon range fix.
-  Litematica classes are used for material list auto-refresh.
   HandRestock design is inspired by Tweakeroo's handrestock feature.

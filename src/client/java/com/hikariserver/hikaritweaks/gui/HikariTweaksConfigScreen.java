@@ -119,7 +119,6 @@ public class HikariTweaksConfigScreen extends GuiConfigsBase
                     wrapConfig(TweaksOptions.DURABILITY_WARNING_ENABLED),
                     wrapConfig(TweaksOptions.AUTO_RESTOCK_HOTBAR),
                     wrapConfig(TweaksOptions.TOTEM_RESTOCK),
-                    wrapConfig(TweaksOptions.AUTO_LITEMATICA_REFRESH),
                     wrapConfig(TweaksOptions.HAND_RESTOCK)
             ));
             case LISTS      -> ConfigOptionWrapper.createFor(TweaksOptions.lists());

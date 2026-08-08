@@ -1,7 +1,10 @@
-﻿# Hikari-Tweaks
+[🇯🇵 日本語 (README-ja.md)](README-ja.md) | **🇬🇧 English**
 
-> **A client-side Fabric utility mod for Minecraft 1.18.2**, designed for the Hikari SMP environment.  
-> Provides a custom scoreboard HUD, auto-restock features, durability warnings, and more.
+---
+
+# Hikari-Tweaks
+
+> **A client-side Fabric utility mod for Minecraft 1.18.2**, developed at [Hikari Server (光鯖)](https://hikariserver.com).
 
 ### Requirements
 | Mod | Type |
@@ -10,240 +13,213 @@
 | [Fabric API](https://modrinth.com/mod/fabric-api) | **Required** |
 | [MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib) | **Required** |
 | [MiniHUD](https://www.curseforge.com/minecraft/mc-mods/minihud) | Optional (beacon fix feature) |
-| [Litematica](https://www.curseforge.com/minecraft/mc-mods/litematica) | Optional (material list auto-refresh) |
 | [Mod Menu](https://modrinth.com/mod/modmenu) | Optional (GUI config screen) |
 
 ---
 
-現在バージョン: **v1.0.9**
 
-更新履歴（v1.0.9）:
-- Update Checker (GitHub Releases) 機能を削除
-- Mod アイコンを差し替え
+## 1. Main Features
 
-Minecraft 1.18.2 向けの **Fabric クライアントサイド Mod** です。  
-Hikari 環境で使う便利機能をまとめています。
+### 1.1 MiniHUD Fix (Freecam Beacon Fix)
 
-- スコアボードHUDのカスタム表示（HikariScoreBoard 連携）
-- 耐久値 1% 警告
-- ホットバー自動補充
-- 不死のトーテム自動補充
-- MiniHUD フリーカメラ時のビーコン範囲補正
-- **Litematica マテリアルリスト自動 Refresh**（v1.0.5 新機能）
-- **手持ち自動補充**（v1.0.6 新機能）
+- While MiniHUD's freecam is active, corrects the beacon range display to use the player's actual position instead of the camera position
+- Toggleable (hotkey supported)
 
----
+### 1.2 Durability 1% Warning
 
-## 1. 主な機能
+- When a durable item drops to 1% or lower, notifies via chat + sound
+- Suppresses duplicate notifications for the same item state
+- Toggleable (hotkey supported)
 
-### 1.1 MiniHUD 補正（Freecam Beacon Fix）
+### 1.3 Hotbar Auto-Restock
 
-- MiniHUD のフリーカメラ中、ビーコン範囲表示の基準をカメラではなくプレイヤー位置に補正
-- ON/OFF 切り替え可能（ホットキー対応）
+- When you open a container, automatically restocks specified items from the container into your hotbar
+- Toggleable (hotkey supported)
 
-### 1.2 耐久値 1% 警告
+Notes:
 
-- 耐久アイテムが「残り1%以下」になったとき、チャット通知 + 効果音で警告
-- 同一状態での連続通知を抑制
-- ON/OFF 切り替え可能（ホットキー対応）
+- Doesn't run on the player inventory screen
+- Doesn't run when opening an ender chest
+- Automatically closes the screen after restocking
 
-### 1.3 ホットバー自動補充
+### 1.4 Totem of Undying Auto-Restock
 
-- コンテナを開いたとき、指定リストのアイテムをホットバーへ自動補充
-- ON/OFF 切り替え可能（ホットキー対応）
+- When a totem is used, restocks another one into the slot it popped from
+- Adjusted so normal slot switches don't trigger it
+- Toggleable (hotkey supported)
 
-補足:
+### 1.7 Hand Auto-Restock (new in v1.0.6)
 
-- プレイヤーインベントリ画面では動作しません
-- エンダーチェストを開いたときは動作しません
-- 補充後は画面を自動で閉じます
+- When any hotbar item drops to **5 or fewer**, automatically restocks from your inventory
+- Behaves like Tweakeroo's handrestock; the target list is managed in the **Hand Restock List** on the Lists tab
+- Monitors only the hotbar; the inventory is used only as a restock source
+- Toggleable (hotkey supported)
 
-### 1.4 不死のトーテム自動補充
+### 1.6 Custom Scoreboard HUD (HikariScoreBoard integration) — rendered as a client HUD
 
-- トーテム発動時に、発動前に持っていたスロットへトーテムを補充
-- 通常のスロット切り替えでは補充が発動しないように調整済み
-- ON/OFF 切り替え可能（ホットキー対応）
-
-### 1.5 Litematica マテリアルリスト自動 Refresh（v1.0.5 新機能）
-
-- Litematica のレイヤー表示を1段ずつ進めながら建築する際、マテリアルリストを**自動で Refresh** します
-- 毎秒（20 tick）ごとに全 SchematicPlacement のマテリアルリストを更新するため、レイヤーを切り替えるたびに手動で Refresh ボタンを押す操作が不要になります
-- Litematica がインストールされていない環境では自動的に無効化されます（エラーなし）
-- ON/OFF 切り替え可能（ホットキー対応）
-
-
-### 1.7 手持ち自動補充（v1.0.6 新機能）
-
-- ホットバー内の指定アイテムが **5 個以下** になったとき、インベントリから自動で補充します
-- Tweakeroo の handrestock 機能と同様の動作で、補充対象は「リスト」タブの **手持ち補充対象リスト** で管理します
-- ホットバーのみを監視し、インベントリ内は補充元としてのみ使用します
-- ON/OFF 切り替え可能（ホットキー対応）
-
-### 1.6 カスタムスコアボードHUD（HikariScoreBoard 連携）、クライアントHUDとして表示します。
-
-- バニラスコアボードの非表示切替
-- ページサイズ変更（1〜50）
-- ページ送り / 戻し / リセット
-- HUD位置（X/Y %）とスケール（0.5x〜3.0x）調整
-- ヘッダー / 本文 / 文字色 / スコア色 / 自己強調色を ARGB で調整
-- サーバー合計値（Total）表示切替
-- プレイヤー管理タブ（表示ブロック切替）
+- Toggle to hide the vanilla scoreboard
+- Change page size (1–50)
+- Next / previous page / reset
+- HUD position (X/Y %) and scale (0.5x–3.0x) adjustment
+- Header / body / text / score / self-highlight colors adjustable in ARGB
+- Toggle for server total (Total) display
+- Player management tab (block-toggle for display)
 
 ---
 
-## 2. 動作環境
+## 2. Requirements
 
 - Minecraft `1.18.2`
 - Fabric Loader `>= 0.14.0`
 - Fabric API
 - malilib
 
-推奨（任意）:
+Recommended (optional):
 
-- Mod Menu（設定画面を開きやすくする）
-- MiniHUD（ビーコン補正機能を使う場合）
-- HikariScoreBoard（カスタムスコアボード連携を使う場合）
-
----
-
-## 3. 導入手順
-
-1. `build/libs/hikari-tweaks-<version>.jar` をクライアント側 `mods/` に配置
-2. 依存 Mod（Fabric API / malilib）も同様に配置
-3. ゲーム起動
-4. 初回起動後、`config/hikari-tweaks.json` が生成されます
+- Mod Menu (for easier access to the config screen)
+- MiniHUD (for the beacon range fix feature)
+- HikariScoreBoard (for the custom scoreboard integration)
 
 ---
 
-## 4. 使い方
+## 3. Installation
 
-### 4.1 設定画面を開く
-
-- デフォルトホットキー: `RIGHT_SHIFT`
-- または Mod Menu 経由で `Hikari-Tweaks` の設定画面を開く
-
-### 4.2 設定タブ
-
-- `Tweaks`: 各機能の ON/OFF
-- `Lists`: ホットバー自動補充対象アイテムIDリスト
-- `Hotkeys`: 機能トグルや設定画面オープンのキー設定
-- `Scoreboard`: スコアボード連携・表示設定・プレイヤー管理
+1. Place `build/libs/hikari-tweaks-<version>.jar` in the client's `mods/`
+2. Place the required mods (Fabric API / malilib) similarly
+3. Launch the game
+4. `config/hikari-tweaks.json` is generated on first launch
 
 ---
 
-## 5. 主要設定（デフォルト値）
+## 4. Usage
 
-| 設定キー | 既定値 | 説明 |
+### 4.1 Open the config screen
+
+- Default hotkey: `RIGHT_SHIFT`
+- Alternatively, open the `Hikari-Tweaks` config screen via Mod Menu
+
+### 4.2 Config tabs
+
+- `Tweaks`: on/off toggles for each feature
+- `Lists`: item ID list for hotbar auto-restock
+- `Hotkeys`: key bindings for feature toggles and opening the config screen
+- `Scoreboard`: scoreboard integration / display settings / player management
+
+---
+
+## 5. Main Settings (defaults)
+
+| Key | Default | Description |
 |---|---:|---|
-| `fixBeaconRangeFreeCam` | `true` | MiniHUDのビーコン範囲補正 |
-| `durabilityWarningEnabled` | `true` | 耐久1%警告 |
-| `autoRestockHotbar` | `false` | ホットバー自動補充 |
-| `totemRestock` | `false` | トーテム自動補充 |
-| `autoLitematicaRefresh` | `false` | マテリアルリスト自動Refresh |
-| `handRestock` | `false` | 手持ち自動補充 |
-| `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | 自動補充対象リスト |
-| `openConfigHotkey` | `RIGHT_SHIFT` | 設定画面を開くキー |
-| `scoreboardCustomHud` | `true` | カスタムHUD表示 |
-| `scoreboardHideVanilla` | `true` | バニラ右側スコアボードを隠す |
-| `scoreboardPageSize` | `10` | 1ページの表示件数（1〜50） |
-| `scoreboardPositionX` | `100` | HUD基準X（0〜100%） |
-| `scoreboardPositionY` | `50` | HUD基準Y（0〜100%） |
-| `scoreboardScale` | `1.0` | HUDスケール（0.5〜3.0） |
-| `scoreboardHeaderColor` | `0x66000000` | ヘッダー背景色（ARGB） |
-| `scoreboardBodyColor` | `0x4D000000` | 本文背景色（ARGB） |
-| `scoreboardTextColor` | `0xFFFFFFFF` | 文字色（ARGB） |
-| `scoreboardScoreColor` | `0xFFFF5555` | スコア色（ARGB） |
-| `scoreboardSelfColor` | `0xFFFFFF55` | 自己行強調色（ARGB） |
-| `scoreboardShowServerTotal` | `true` | サーバー合計表示 |
+| `fixBeaconRangeFreeCam` | `true` | MiniHUD beacon range fix |
+| `durabilityWarningEnabled` | `true` | Durability 1% warning |
+| `autoRestockHotbar` | `false` | Hotbar auto-restock |
+| `totemRestock` | `false` | Totem auto-restock |
+| `handRestock` | `false` | Hand auto-restock |
+| `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | Auto-restock target list |
+| `openConfigHotkey` | `RIGHT_SHIFT` | Key to open the config screen |
+| `scoreboardCustomHud` | `true` | Show custom HUD |
+| `scoreboardHideVanilla` | `true` | Hide the vanilla right-side scoreboard |
+| `scoreboardPageSize` | `10` | Rows per page (1–50) |
+| `scoreboardPositionX` | `100` | HUD anchor X (0–100%) |
+| `scoreboardPositionY` | `50` | HUD anchor Y (0–100%) |
+| `scoreboardScale` | `1.0` | HUD scale (0.5–3.0) |
+| `scoreboardHeaderColor` | `0x66000000` | Header background color (ARGB) |
+| `scoreboardBodyColor` | `0x4D000000` | Body background color (ARGB) |
+| `scoreboardTextColor` | `0xFFFFFFFF` | Text color (ARGB) |
+| `scoreboardScoreColor` | `0xFFFF5555` | Score color (ARGB) |
+| `scoreboardSelfColor` | `0xFFFFFF55` | Self-row highlight color (ARGB) |
+| `scoreboardShowServerTotal` | `true` | Show server total |
 
 ---
 
-## 6. ホットキー
+## 6. Hotkeys
 
-- `Open Config`: 既定 `RIGHT_SHIFT`
-- `fixBeaconRangeFreeCam`: 初期未割当（任意で設定）
-- `durabilityWarningEnabled`: 初期未割当（任意で設定）
-- `autoRestockHotbar`: 初期未割当（任意で設定）
-- `totemRestock`: 初期未割当（任意で設定）
-- `autoLitematicaRefresh`: 初期未割当（任意で設定）
-- `handRestock`: 初期未割当（任意で設定）
+- `Open Config`: default `RIGHT_SHIFT`
+- `fixBeaconRangeFreeCam`: unassigned (set as needed)
+- `durabilityWarningEnabled`: unassigned (set as needed)
+- `autoRestockHotbar`: unassigned (set as needed)
+- `totemRestock`: unassigned (set as needed)
+- `handRestock`: unassigned (set as needed)
 
 ---
 
-## 7. HikariScoreBoard 連携仕様
+## 7. HikariScoreBoard Integration Specification
 
-`Hikari-Tweaks` は以下チャネルで `HikariScoreBoard` と通信します。
+`Hikari-Tweaks` communicates with `HikariScoreBoard` via the following channels.
 
-受信:
+Receive:
 
 - `hikariscoreboard:ranking_data`
 - `hikariscoreboard:player_list_response`
 
-送信:
+Send:
 
 - `hikariscoreboard:player_list_request`
 - `hikariscoreboard:block_toggle`
 
 ---
 
-## 8. 設定ファイル
+## 8. Config File
 
-配置先: `config/hikari-tweaks.json`
+Location: `config/hikari-tweaks.json`
 
-- JSON形式で保存
-- 起動時に不足項目を補完
-- 設定画面やホットキー変更時に自動保存
+- Saved in JSON format
+- Missing fields are auto-supplemented on startup
+- Auto-saved when settings or hotkeys change
 
 ---
 
-## 9. ビルド
+## 9. Build
 
 ```bash
 ./gradlew build
 ```
 
-生成物:
+Outputs:
 
 - `build/libs/hikari-tweaks-<version>.jar`
 - `build/libs/hikari-tweaks-<version>-sources.jar`
 
 ---
 
-## 10. 既知の挙動・注意点
+## 10. Known Behaviors / Notes
 
-- 自動補充系はクライアント操作としてスロットクリックを行います
-- ホットバー自動補充はコンテナを開いたタイミングで実行され、完了後に画面を閉じます
-- F3デバッグ表示中はカスタムスコアボードHUDを描画しません
+- Auto-restock features perform slot clicks as client-side operations
+- Hotbar auto-restock runs when a container is opened, closing the screen after completion
+- Custom scoreboard HUD is not drawn while the F3 debug screen is shown
 
 ---
 
-## 11. ライセンス
+## 11. License
 
-Apache-2.0
+**GNU Lesser General Public License v3.0 (LGPL-3.0-or-later)**
+
+Copyright (C) 2025-2026 Hikari Server
+
+
+See the bundled [LICENSE](LICENSE) file and the following URLs for details:
+- https://www.gnu.org/licenses/lgpl-3.0.txt
+- https://www.gnu.org/licenses/gpl-3.0.txt
 
 ---
 
 ## 12. Credits
 
+Developed at: **[Hikari Server (光鯖)](https://hikariserver.com)** — a Minecraft Java Edition community server
+
+- **Maintainer**: [Tamago0314](https://github.com/Tamago0314)
+
+
+### Dependencies / Reference Implementations
+
 **masa** (fi.dy.masa)
 - [MaLiLib](https://github.com/maruohon/malilib) — LGPLv3
 - [MiniHUD](https://github.com/maruohon/minihud) — LGPLv3
-- [Litematica](https://github.com/maruohon/litematica) — LGPLv3
 - [Tweakeroo](https://github.com/maruohon/tweakeroo) — LGPLv3
 
-  MaLiLib の API を config・hotkey・GUI 全般に使用。  
-  MiniHUD の OverlayRenderer に Mixin を挿入（フリーカメラ時ビーコン範囲補正）。  
-  Litematica のクラスを直接利用（マテリアルリスト自動 Refresh）。  
-  HandRestock の設計を Tweakeroo の handrestock 機能を参考に実装。
 
-**Sim_999_256** (ASTRAL-SMP)
-- [AST-Tweaks](https://github.com/ASTRAL-SMP/AST-Tweaks) — Apache-2.0
+**Sim-hu** (ASTRAL-SMP) — [AST-Tweaks](https://github.com/ASTRAL-SMP/AST-Tweaks) (Apache-2.0)
 
-  `PositionEditorScreen`（スコアボード位置調整画面）の実装をベースに作成。
-  クラス構造・ドラッグ検出ロジック・スケールスライダーの設計が AST-Tweaks の実装に基づいています。
 
-**pugur**
-- [ama-tweaks](https://github.com/pugur523/ama-tweaks) — MIT
-
-  コンテナ開閉時のホットバー自動補充機能の設計アイデアを参考にしました。
-
+**pugur** — [ama-tweaks](https://github.com/pugur523/ama-tweaks) (MIT)

@@ -3,16 +3,16 @@
   "id": "hikari-tweaks",
   "version": "${version}",
   "name": "Hikari-Tweaks",
-  "description": "Client-side utility tweaks for Hikari.\n\nIDEA: AtsukiGames, Raiy256",
+  "description": "Client-side utility tweaks developed at Hikari Server (https://hikariserver.com). Custom scoreboard HUD (works with HikariScoreBoard), auto-restock, durability warning, and more.\n\nIDEA: AtsukiGames, Raiy256",
   "authors": [
     "Tamago0314"
   ],
   "contact": {
-    "homepage": "https://github.com/Tamago0314/Hikari-Tweaks",
+    "homepage": "https://hikariserver.com",
     "sources": "https://github.com/Tamago0314/Hikari-Tweaks",
     "issues": "https://github.com/Tamago0314/Hikari-Tweaks/issues"
   },
-  "license": "Apache-2.0",
+  "license": "LGPL-3.0-or-later",
   "icon": "assets/hikari-tweaks/icon.png",
   "environment": "client",
   "entrypoints": {
@@ -24,8 +24,7 @@
     ]
   },
   "mixins": [
-    "hikari-tweaks.mixins.json",
-    "hikari-tweaks-litematica.mixins.json"
+    "hikari-tweaks.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.14.0",
@@ -35,7 +34,6 @@
   },
   "suggests": {
     "modmenu": "*",
-    "minihud": "*",
-    "litematica": "*"
+    "minihud": "*"
   }
 }

@@ -8,8 +8,6 @@
   "config.comment.autorestockhotbar": "コンテナを開いたとき、リストのアイテムをホットバーへ補充します。",
   "config.name.totemrestock": "トーテム補充",
   "config.comment.totemrestock": "使用された不死のトーテムをインベントリから同じ手へ補充します。",
-  "config.name.autolitematicarefresh": "マテリアルリスト自動Refresh",
-  "config.comment.autolitematicarefresh": "Litematica のレイヤー変更後にマテリアルリストを自動で Refresh します（要 Litematica）。",
   "config.name.hotbarrestocklist": "ホットバー補充対象リスト",
   "config.comment.hotbarrestocklist": "ホットバー自動補充の対象アイテム ID 一覧です。",
   "config.name.openconfig": "設定画面を開く",
