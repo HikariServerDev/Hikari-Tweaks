@@ -27,10 +27,10 @@
     "hikari-tweaks.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.14.0",
+    "fabricloader": ">=${loader_min}",
     "fabric-api": "*",
     "minecraft": "${minecraft}",
-    "malilib": "*"
+    "malilib": ">=${malilib_min}"
   },
   "suggests": {
     "modmenu": "*",

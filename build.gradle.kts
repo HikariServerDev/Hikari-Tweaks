@@ -88,6 +88,9 @@ tasks.processResources {
         "name" to prop("mod.name"),
         "version" to project.version.toString(),
         "minecraft" to prop("mod.mc_compat"),
+        // 依存の下限。根拠は stonecutter.properties.toml のヘッダコメントを参照。
+        "loader_min" to prop("mod.loader_min"),
+        "malilib_min" to prop("mod.malilib_min"),
     )
     props.forEach { (k, v) -> inputs.property(k, v) }
 

@@ -23,14 +23,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 // └──────────────────────────────────────────────────────────┘
 //
 // ★ method には必ず**完全な記述子**を書くこと。
-//   1.20 以降 InGameHud には renderScoreboardSidebar のオーバーロードが 2 つある:
+//   1.20.5 以降 InGameHud には renderScoreboardSidebar のオーバーロードが 2 つある:
 //     renderScoreboardSidebar(DrawContext, RenderTickCounter|float)  ← 呼び出し元
 //     renderScoreboardSidebar(DrawContext, ScoreboardObjective)      ← 実際の描画（こちらが目的）
-//   メソッド名だけを書くと Mixin AP が前者を拾ってしまい、
+//   （1.20 / 1.20.1 / 1.20.2 / 1.20.3 / 1.20.4 では
+//     renderScoreboardSidebar(DrawContext, ScoreboardObjective) の 1 つだけ。
+//     オーバーロードが 2 つになるのは 1.20.5 から。実測で確認済み）
+//   メソッド名だけを書くと、オーバーロードが 2 つあるバージョンで
+//   Mixin AP が前者を拾ってしまい、
 //   **ビルドは通るのに実行時に mixin 適用が失敗する**。
+//   1 つしか無いバージョンでも、記述子を書いておけば将来の追加に巻き込まれない。
 //
-// シグネチャの変遷:
-//   〜1.19.4 : (MatrixStack, ...)
+// render のシグネチャの変遷:
+//   〜1.19.4 : (MatrixStack, float)
 //   1.20〜1.20.6 : (DrawContext, float)
 //   1.21〜   : (DrawContext, RenderTickCounter)
 @Mixin(InGameHud.class)
