@@ -25,9 +25,10 @@ public final class NetCompat {
     }
 
     //? if >=1.20.5 {
-    /*// チャンネルごとの CustomPayload.Id をキャッシュする
+    /*// チャンネルごとの CustomPayload.Id をキャッシュする。
+    // ネットスレッドとレンダースレッドの双方から触れうるため ConcurrentHashMap を使う。
     private static final java.util.Map<Identifier, net.minecraft.network.packet.CustomPayload.Id<RawPayload>> IDS =
-            new java.util.HashMap<>();
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     // 生バイト列をそのまま運ぶ CustomPayload
     public record RawPayload(
@@ -44,12 +45,27 @@ public final class NetCompat {
         return IDS.computeIfAbsent(channel, c -> new net.minecraft.network.packet.CustomPayload.Id<>(c));
     }
 
-    // 残りバイトを全部読む codec を作る
+    // 残りバイトを全部読む codec を作る。
+    // ワイヤ上のバイト列は「ペイロードそのまま」で、長さプレフィックスは付けない
+    // （サーバー側は Bukkit プラグインの生 PluginMessage）。
     private static net.minecraft.network.codec.PacketCodec<PacketByteBuf, RawPayload> codecOf(
             net.minecraft.network.packet.CustomPayload.Id<RawPayload> id) {
         return net.minecraft.network.codec.PacketCodec.of(
-                (payload, buf) -> buf.writeBytes(payload.data().copy()),
-                buf -> new RawPayload(id, new PacketByteBuf(buf.readBytes(buf.readableBytes()))));
+                // 書き出しは readable 範囲をそのまま転送する。
+                // 添字付き writeBytes は src の readerIndex を進めないので、
+                // 従来の data().copy() と違い一時バッファも作らない（出力バイト列は完全に同一）。
+                (payload, buf) -> {
+                    PacketByteBuf data = payload.data();
+                    buf.writeBytes(data, data.readerIndex(), data.readableBytes());
+                },
+                // 読み込みは byte[] 経由にして netty のアロケータ管理から外す。
+                // buf.readBytes(int) はアロケータから新規 ByteBuf を確保するが
+                // release() する場所が無く、受信のたびに 1 個ずつリークしていた。
+                buf -> {
+                    byte[] bytes = new byte[buf.readableBytes()];
+                    buf.readBytes(bytes);
+                    return new RawPayload(id, new PacketByteBuf(io.netty.buffer.Unpooled.wrappedBuffer(bytes)));
+                });
     }
 
     public static void registerReceiver(Identifier channel, Receiver receiver) {

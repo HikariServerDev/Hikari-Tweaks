@@ -71,6 +71,10 @@ public final class ScoreboardHudRenderer {
         if (data == null) return;
 
         MinecraftClient mc = MinecraftClient.getInstance();
+        // F1（HUD 非表示）中はカスタムスコアボードも一緒に隠す。
+        // MixinInGameHud は InGameHud.render の TAIL に注入しているため、
+        // バニラ側の HUD 非表示処理をすり抜けて描画されてしまう。ここで明示的に弾く。
+        if (mc.options.hudHidden) return;
         // F3 デバッグ画面表示中はスコアボードを非表示にする
         if (HudCompat.isDebugHudShown(mc)) return;
 

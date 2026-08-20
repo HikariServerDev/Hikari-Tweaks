@@ -91,16 +91,39 @@ public final class PositionEditorScreen extends Screen {
     // 毎フレーム呼ばれる描画メソッド。
     // 1.20 で Screen.render の引数が MatrixStack から DrawContext に変わったため、
     // 薄いラッパーだけをバージョン分岐させ、描画本体は renderContent に集約する。
-    //? if >=1.20.2 {
+    //
+    // ★ 背景（暗幕）を「誰が」描くかがバージョンで異なるため、呼び出し順まで分岐させている。
+    //   javap で Screen の実装を確認した結果:
+    //     〜1.20.1      : Screen.render は renderBackground を呼ばない
+    //                     → 呼び出し側（この Mod）が自分で呼ぶ必要がある
+    //     1.20.2〜1.21.5: Screen.render が**先頭で** renderBackground を呼ぶ
+    //     1.21.6〜      : Screen.render は呼ばない。renderWithTooltip が render より**前に**呼ぶ
+    //
+    //   1.20.2〜1.21.5 でここから renderBackground を呼ぶと暗幕が 2 枚重なるうえ
+    //   （α=0xC0 × 2、1.20.6 以降はブラーも二重）、その後の super.render が
+    //   もう一度暗幕を描くので **独自描画（renderContent）が暗幕の下に沈んで見えなくなる**。
+    //   そのため renderBackground は呼ばず、super.render の**後**に renderContent を描く。
+    //   結果として独自描画がボタンより手前に来るが、埋もれるよりは良いので仕様として許容する。
+    //? if >=1.21.6 {
     /*@Override
     public void render(net.minecraft.client.gui.DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        // 背景は render に入る前に renderWithTooltip が描画済みなので、ここでは呼ばない。
+        // 描画順は 1.20 未満と同じ（独自描画 → ウィジェット）に揃えられる。
         renderContent(new DrawCtx(context), mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
+    }
+    *///?} elif >=1.20.2 {
+    /*@Override
+    public void render(net.minecraft.client.gui.DrawContext context, int mouseX, int mouseY, float delta) {
+        // super.render が先頭で renderBackground を呼ぶため、ここでは呼ばない（二重暗幕の防止）。
+        // かつ独自描画がその暗幕に沈まないよう、super.render の後に renderContent を描く。
+        super.render(context, mouseX, mouseY, delta);
+        renderContent(new DrawCtx(context), mouseX, mouseY, delta);
     }
     *///?} elif >=1.20 {
     /*@Override
     public void render(net.minecraft.client.gui.DrawContext context, int mouseX, int mouseY, float delta) {
+        // 1.20〜1.20.1 は Screen.render が背景を描かないので、自分で呼ぶ必要がある
         renderBackground(context);
         renderContent(new DrawCtx(context), mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
@@ -108,6 +131,7 @@ public final class PositionEditorScreen extends Screen {
     *///?} else {
     @Override
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+        // 1.20 未満も Screen.render が背景を描かないので、自分で呼ぶ必要がある
         renderBackground(matrices);
         renderContent(new DrawCtx(matrices), mouseX, mouseY, delta);
         super.render(matrices, mouseX, mouseY, delta);

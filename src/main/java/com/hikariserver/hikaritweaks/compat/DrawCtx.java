@@ -121,14 +121,24 @@ public final class DrawCtx {
         //? if >=1.20 {
         /*ctx.enableScissor(left, top, right, bottom);
         *///?} else {
-        // 1.20 未満は GL のシザー矩形（原点が左下・フレームバッファ座標）を直接指定する
-        double scale = MinecraftClient.getInstance().getWindow().getScaleFactor();
-        int fbHeight = MinecraftClient.getInstance().getWindow().getHeight();
+        // 1.20 未満は GL のシザー矩形（原点が左下・フレームバッファ座標）を直接指定する。
+        //
+        // ★ 高さは必ず Window.getFramebufferHeight() を使うこと。getHeight() ではない。
+        //   glScissor が受け取るのは**実ピクセル（フレームバッファ座標）**であり、
+        //   Window.height（ウィンドウ座標）とは別フィールド。
+        //   Windows / 等倍 DPI では両者が一致するので開発機では絶対に再現しないが、
+        //   macOS Retina のような HiDPI 環境では framebufferHeight が height の 2 倍になり、
+        //   getHeight() を使うと矩形の Y 原点が画面外へ飛んでプレイヤー一覧が 1 行も描かれない。
+        //   バニラの DrawableHelper.setScissor も getFramebufferHeight() を使っている
+        //   （javap で確認済み。幅・高さは Math.max(0, ...) でクランプしている）。
+        net.minecraft.client.util.Window window = MinecraftClient.getInstance().getWindow();
+        double scale = window.getScaleFactor();
+        int fbHeight = window.getFramebufferHeight();
         com.mojang.blaze3d.systems.RenderSystem.enableScissor(
                 (int) (left * scale),
                 (int) (fbHeight - bottom * scale),
-                (int) ((right - left) * scale),
-                (int) ((bottom - top) * scale));
+                Math.max(0, (int) ((right - left) * scale)),
+                Math.max(0, (int) ((bottom - top) * scale)));
         //?}
     }
 
@@ -136,6 +146,8 @@ public final class DrawCtx {
         //? if >=1.20 {
         /*ctx.disableScissor();
         *///?} else {
+        // enableScissor 側がバニラの ScissorStack を使わず glScissor を直接設定しているため、
+        // ここも対応する形で直接無効化する（座標を扱わないので高さ問題の影響は無い）。
         com.mojang.blaze3d.systems.RenderSystem.disableScissor();
         //?}
     }
