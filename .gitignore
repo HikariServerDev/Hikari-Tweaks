@@ -3,6 +3,11 @@
 build/
 out/
 
+# Stonecutter (マルチバージョンビルドの生成物)
+versions/*/build/
+versions/*/.gradle/
+.stonecutter/
+
 # IDE
 .idea/
 *.iml

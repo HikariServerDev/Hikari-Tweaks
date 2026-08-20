@@ -4,7 +4,7 @@
 
 # Hikari-Tweaks
 
-> **A client-side Fabric utility mod for Minecraft 1.18.2**, developed at [Hikari Server (光鯖)](https://hikariserver.com).
+> **A client-side Fabric utility mod for Minecraft 1.17 - 1.21.11**, developed at [Hikari Server (光鯖)](https://hikariserver.com).
 
 ### Requirements
 | Mod | Type |
@@ -69,10 +69,35 @@ Notes:
 
 ## 2. Requirements
 
-- Minecraft `1.18.2`
+- Minecraft **1.17 - 1.21.11** (Fabric)
 - Fabric Loader `>= 0.14.0`
 - Fabric API
 - malilib
+
+### Supported versions
+
+One jar is published per Minecraft version group. Download the one matching your game.
+
+| Jar | Supported Minecraft versions |
+|---|---|
+| `hikari-tweaks-<version>+1.17.jar` | 1.17 |
+| `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 |
+| `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 |
+| `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 |
+| `hikari-tweaks-<version>+1.19.2.jar` | 1.19, 1.19.1, 1.19.2 |
+| `hikari-tweaks-<version>+1.19.3.jar` | 1.19.3 |
+| `hikari-tweaks-<version>+1.19.4.jar` | 1.19.4 |
+| `hikari-tweaks-<version>+1.20.1.jar` | 1.20, 1.20.1 |
+| `hikari-tweaks-<version>+1.20.2.jar` | 1.20.2 |
+| `hikari-tweaks-<version>+1.20.4.jar` | 1.20.3, 1.20.4 |
+| `hikari-tweaks-<version>+1.20.6.jar` | 1.20.5, 1.20.6 |
+| `hikari-tweaks-<version>+1.21.1.jar` | 1.21, 1.21.1 |
+| `hikari-tweaks-<version>+1.21.3.jar` | 1.21.2, 1.21.3 |
+| `hikari-tweaks-<version>+1.21.4.jar` | 1.21.4 |
+| `hikari-tweaks-<version>+1.21.5.jar` | 1.21.5 |
+| `hikari-tweaks-<version>+1.21.8.jar` | 1.21.6, 1.21.7, 1.21.8 |
+| `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 |
+| `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 |
 
 Recommended (optional):
 
@@ -172,14 +197,47 @@ Location: `config/hikari-tweaks.json`
 
 ## 9. Build
 
+This project uses [Stonecutter](https://stonecutter.kikugie.dev/) to build every supported
+Minecraft version from a single source tree. Java 21 is enough to build all of them
+(each target sets its own `--release` level).
+
+Build every version:
+
 ```bash
-./gradlew build
+./gradlew chiseledBuild
 ```
 
-Outputs:
+Outputs land in `build/libs/<mod version>/`, one jar (plus sources jar) per target:
 
-- `build/libs/hikari-tweaks-<version>.jar`
-- `build/libs/hikari-tweaks-<version>-sources.jar`
+- `build/libs/<mod version>/hikari-tweaks-<version>+<minecraft version>.jar`
+- `build/libs/<mod version>/hikari-tweaks-<version>+<minecraft version>-sources.jar`
+
+Build a single version while developing:
+
+```bash
+./gradlew "1.21.10:build"
+```
+
+After building, verify the produced jars:
+
+```bash
+python scripts/verify-jars.py
+```
+
+This checks the Java level, `depends.minecraft`, and — importantly — that the mixin
+refmap resolves to the intended target methods. A green build does **not** by itself
+prove the mixins are correct, so run this before publishing.
+
+### Adding a new Minecraft version
+
+1. Add a `["<version>"]` block to `stonecutter.properties.toml` with its dependency versions.
+2. Add the version to `versions(...)` in `settings.gradle.kts`.
+3. Run `./gradlew "<version>:build"` and fix whatever breaks.
+4. Run `python scripts/verify-jars.py`.
+
+Version differences are kept inside `com.hikariserver.hikaritweaks.compat` wherever possible;
+only signatures that are themselves version boundaries (screen `render`, mouse events, mixin
+targets) use Stonecutter comment branches. See `docs/multiversion/PLAN.md` for the design.
 
 ---
 

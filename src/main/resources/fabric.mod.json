@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "hikari-tweaks",
+  "id": "${id}",
   "version": "${version}",
-  "name": "Hikari-Tweaks",
+  "name": "${name}",
   "description": "Client-side utility tweaks developed at Hikari Server (https://hikariserver.com). Custom scoreboard HUD (works with HikariScoreBoard), auto-restock, durability warning, and more.\n\nIDEA: AtsukiGames, Raiy256",
   "authors": [
     "Tamago0314"
@@ -29,7 +29,7 @@
   "depends": {
     "fabricloader": ">=0.14.0",
     "fabric-api": "*",
-    "minecraft": "1.18.2",
+    "minecraft": "${minecraft}",
     "malilib": "*"
   },
   "suggests": {
