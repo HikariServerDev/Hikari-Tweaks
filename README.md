@@ -9,7 +9,7 @@
 ### Requirements
 | Mod | Type |
 |---|---|
-| [Fabric Loader](https://fabricmc.net/) `>=0.14.0` | **Required** |
+| [Fabric Loader](https://fabricmc.net/) `>=0.14.0` (MC 1.17.1 - 1.20.4) / `>=0.15.10` (MC 1.20.5 and newer) | **Required** |
 | [Fabric API](https://modrinth.com/mod/fabric-api) | **Required** |
 | [MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib) | **Required** |
 | [MiniHUD](https://www.curseforge.com/minecraft/mc-mods/minihud) | Optional (beacon fix feature) |
@@ -70,7 +70,9 @@ Notes:
 ## 2. Requirements
 
 - Minecraft **1.17.1 - 1.21.11** (Fabric)
-- Fabric Loader `>= 0.14.0`
+- Fabric Loader `>= 0.14.0` (MC 1.17.1 - 1.20.4) / `>= 0.15.10` (MC 1.20.5 and newer)
+  - The 1.20.5+ jars declare `compatibilityLevel = JAVA_21` for Mixin, which Fabric Loader
+    only understands from 0.15.10 onwards (the first release bundling sponge-mixin 0.13.3).
 - Fabric API
 - malilib
 

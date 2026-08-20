@@ -52,9 +52,33 @@
 ## Requirements
 
 - Minecraft **1.17.1 - 1.21.11** (Fabric)
-- **Fabric Loader** >= 0.14.0
+- **Fabric Loader** >= 0.14.0 (MC 1.17.1 - 1.20.4) / >= 0.15.10 (MC 1.20.5 and newer)
 - **Fabric API**
-- **[MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib)**
+- **[MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib)** — a per-jar minimum version is declared; the build target version of MaLiLib (or newer) is required
+
+### Supported versions
+
+One jar is published per Minecraft version group. Download the one matching your game.
+
+| Jar | Supported Minecraft versions |
+|---|---|
+| `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 |
+| `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 |
+| `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 |
+| `hikari-tweaks-<version>+1.19.2.jar` | 1.19, 1.19.1, 1.19.2 |
+| `hikari-tweaks-<version>+1.19.3.jar` | 1.19.3 |
+| `hikari-tweaks-<version>+1.19.4.jar` | 1.19.4 |
+| `hikari-tweaks-<version>+1.20.1.jar` | 1.20, 1.20.1 |
+| `hikari-tweaks-<version>+1.20.2.jar` | 1.20.2 |
+| `hikari-tweaks-<version>+1.20.4.jar` | 1.20.3, 1.20.4 |
+| `hikari-tweaks-<version>+1.20.6.jar` | 1.20.5, 1.20.6 |
+| `hikari-tweaks-<version>+1.21.1.jar` | 1.21, 1.21.1 |
+| `hikari-tweaks-<version>+1.21.3.jar` | 1.21.2, 1.21.3 |
+| `hikari-tweaks-<version>+1.21.4.jar` | 1.21.4 |
+| `hikari-tweaks-<version>+1.21.5.jar` | 1.21.5 |
+| `hikari-tweaks-<version>+1.21.8.jar` | 1.21.6, 1.21.7, 1.21.8 |
+| `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 |
+| `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 |
 
 ## Optional
 
