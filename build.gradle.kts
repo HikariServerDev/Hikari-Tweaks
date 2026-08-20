@@ -40,6 +40,8 @@ dependencies {
     // 1.17 系だけ masa の maven を指しているため。
     modImplementation(prop("deps.malilib")) { isTransitive = false }
     modCompileOnly("maven.modrinth:minihud:${prop("deps.minihud")}") { isTransitive = false }
+    // runClient で MixinOverlayRenderer を実際に検証するため、開発実行時のみ MiniHUD を読み込む
+    modLocalRuntime("maven.modrinth:minihud:${prop("deps.minihud")}") { isTransitive = false }
     modCompileOnly("maven.modrinth:modmenu:${prop("deps.modmenu")}") { isTransitive = false }
 }
 
@@ -64,8 +66,10 @@ loom {
     }
 
     runConfigs.all {
-        // 全バージョンで run ディレクトリを共有する
-        runDirectory = rootProject.file("run")
+        // run ディレクトリはバージョンごとに分ける。
+        // options.txt やワールドの形式が MC バージョン間で互換でないため、
+        // 共有すると古いバージョンの起動が壊れる。
+        runDirectory = rootProject.file("run/${sc.current.version}")
     }
 }
 
