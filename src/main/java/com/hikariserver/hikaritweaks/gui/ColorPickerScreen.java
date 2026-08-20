@@ -100,7 +100,11 @@ public final class ColorPickerScreen extends Screen {
                     // ターゲットを切り替える前に、現在のスライダー値を編集バッファへ書き戻す。
                     // これを忘れると HEADER の A/R/G/B をいじってから BODY タブへ移った時点で
                     // HEADER の編集が失われる（saveAll() / プリセットボタンと同じ扱いに揃える）。
-                    btn -> { activeTarget = t; rebuildWidgets(); }
+                    btn -> {
+                        colors[activeTarget.ordinal()] = buildColor();
+                        activeTarget = t;
+                        rebuildWidgets();
+                    }
             ));
         }
 
