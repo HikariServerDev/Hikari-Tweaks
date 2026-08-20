@@ -13,16 +13,6 @@ deps.gson = "2.10.1"
 
 # ---------------------------------------------------------------- 1.17.x
 
-["1.17"]
-mod.mc_compat = "1.17"
-mod.mc_releases = ["1.17"]
-mod.java = "16"
-deps.yarn = "1.17+build.13"
-deps.fabric_api = "0.36.0+1.17"
-deps.malilib = "fi.dy.masa.malilib:malilib-fabric-1.17.0:0.10.0-dev.22+beta.1"
-deps.minihud = "0.19.0-dev.20210626.193015"
-deps.modmenu = "2.0.17"
-
 ["1.17.1"]
 mod.mc_compat = "1.17.1"
 mod.mc_releases = ["1.17.1"]

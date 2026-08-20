@@ -4,7 +4,7 @@
 
 # Hikari-Tweaks
 
-> **A client-side Fabric utility mod for Minecraft 1.17 - 1.21.11**, developed at [Hikari Server (光鯖)](https://hikariserver.com).
+> **A client-side Fabric utility mod for Minecraft 1.17.1 - 1.21.11**, developed at [Hikari Server (光鯖)](https://hikariserver.com).
 
 ### Requirements
 | Mod | Type |
@@ -69,7 +69,7 @@ Notes:
 
 ## 2. Requirements
 
-- Minecraft **1.17 - 1.21.11** (Fabric)
+- Minecraft **1.17.1 - 1.21.11** (Fabric)
 - Fabric Loader `>= 0.14.0`
 - Fabric API
 - malilib
@@ -80,7 +80,6 @@ One jar is published per Minecraft version group. Download the one matching your
 
 | Jar | Supported Minecraft versions |
 |---|---|
-| `hikari-tweaks-<version>+1.17.jar` | 1.17 |
 | `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 |
 | `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 |
 | `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 |

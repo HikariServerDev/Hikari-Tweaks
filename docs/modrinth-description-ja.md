@@ -9,7 +9,7 @@
 
 </div>
 
-**Minecraft 1.17 〜 1.21.11 向けのクライアントサイド Fabric ユーティリティ Mod**。[Hikari Server (光鯖)](https://hikariserver.com) で開発されました。カスタマイズ可能なスコアボード HUD（HikariScoreBoard 連携）と便利機能をまとめて提供します。
+**Minecraft 1.17.1 〜 1.21.11 向けのクライアントサイド Fabric ユーティリティ Mod**。[Hikari Server (光鯖)](https://hikariserver.com) で開発されました。カスタマイズ可能なスコアボード HUD（HikariScoreBoard 連携）と便利機能をまとめて提供します。
 
 ## 機能
 
@@ -51,7 +51,7 @@
 
 ## 動作環境
 
-- Minecraft **1.17 〜 1.21.11**（Fabric）
+- Minecraft **1.17.1 〜 1.21.11**（Fabric）
 - **Fabric Loader** >= 0.14.0
 - **Fabric API**
 - **[MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib)**

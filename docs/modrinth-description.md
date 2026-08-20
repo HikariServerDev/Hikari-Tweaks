@@ -9,7 +9,7 @@
 
 </div>
 
-**A client-side Fabric utility mod for Minecraft 1.17 - 1.21.11**, developed at [Hikari Server (光鯖)](https://hikariserver.com). Provides a fully customizable custom scoreboard HUD (paired with HikariScoreBoard) plus a set of quality-of-life features.
+**A client-side Fabric utility mod for Minecraft 1.17.1 - 1.21.11**, developed at [Hikari Server (光鯖)](https://hikariserver.com). Provides a fully customizable custom scoreboard HUD (paired with HikariScoreBoard) plus a set of quality-of-life features.
 
 ## Features
 
@@ -51,7 +51,7 @@
 
 ## Requirements
 
-- Minecraft **1.17 - 1.21.11** (Fabric)
+- Minecraft **1.17.1 - 1.21.11** (Fabric)
 - **Fabric Loader** >= 0.14.0
 - **Fabric API**
 - **[MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib)**
