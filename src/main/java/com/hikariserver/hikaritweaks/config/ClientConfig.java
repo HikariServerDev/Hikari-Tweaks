@@ -9,7 +9,7 @@ public class ClientConfig {
 
     // ── バージョン管理 ─────────────────────────────────────
     // フィールド追加・削除のたびに +1 する
-    public int configVersion = 6;
+    public int configVersion = 7;
 
     // ── 補助機能 ───────────────────────────────────────────
     // MiniHUD フリーカメラ時のビーコン範囲修正の有効フラグとホットキー
@@ -44,8 +44,16 @@ public class ClientConfig {
     public List<String> handRestockList = new ArrayList<>();
 
     // ── ホットキー ─────────────────────────────────────────
-    // 設定画面を開くホットキー（デフォルト: 右シフト）
-    public String openConfigHotkey = "RIGHT_SHIFT";
+    // 設定画面を開くホットキーの既定値。
+    // malilib（KeybindMulti）は複数キーの同時押しをカンマ区切りで表現するため、
+    // 「H を押しながら T」は "H,T"（画面上の表示は "H + T"）となる。
+    // ※ Gson は static フィールドをシリアライズしないので設定ファイルには出力されない。
+    public static final String DEFAULT_OPEN_CONFIG_HOTKEY = "H,T";
+    // v6 以前の既定値（移行判定用）
+    public static final String OLD_DEFAULT_OPEN_CONFIG_HOTKEY = "RIGHT_SHIFT";
+
+    // 設定画面を開くホットキー（デフォルト: H を押しながら T）
+    public String openConfigHotkey = DEFAULT_OPEN_CONFIG_HOTKEY;
     // スコアボードのページ切り替えホットキー
     public String scoreboardNextPageHotkey = "";
     public String scoreboardPrevPageHotkey = "";
@@ -132,6 +140,16 @@ public class ClientConfig {
             handRestockHotkey = "";
             handRestockList = new ArrayList<>();
             configVersion = 6;
+        }
+        // v6 → v7: 設定画面を開く既定ホットキーを RIGHT_SHIFT から H + T へ変更する。
+        // 旧既定値 "RIGHT_SHIFT" のままのときだけ置き換え、
+        // ユーザーが自分で別のキーに変更している場合や
+        // 空文字列（＝意図的に無効化している）は尊重して触らない。
+        if (configVersion < 7) {
+            if (OLD_DEFAULT_OPEN_CONFIG_HOTKEY.equals(openConfigHotkey)) {
+                openConfigHotkey = DEFAULT_OPEN_CONFIG_HOTKEY;
+            }
+            configVersion = 7;
         }
     }
 }

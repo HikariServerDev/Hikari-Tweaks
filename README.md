@@ -121,7 +121,7 @@ Recommended (optional):
 
 ### 4.1 Open the config screen
 
-- Default hotkey: `RIGHT_SHIFT`
+- Default hotkey: `H` + `T` (hold `H` and press `T`; stored as `H,T`)
 - Alternatively, open the `Hikari-Tweaks` config screen via Mod Menu
 
 ### 4.2 Config tabs
@@ -143,7 +143,7 @@ Recommended (optional):
 | `totemRestock` | `false` | Totem auto-restock |
 | `handRestock` | `false` | Hand auto-restock |
 | `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | Auto-restock target list |
-| `openConfigHotkey` | `RIGHT_SHIFT` | Key to open the config screen |
+| `openConfigHotkey` | `H,T` | Key to open the config screen (hold `H` and press `T`) |
 | `scoreboardCustomHud` | `true` | Show custom HUD |
 | `scoreboardHideVanilla` | `true` | Hide the vanilla right-side scoreboard |
 | `scoreboardPageSize` | `10` | Rows per page (1–50) |
@@ -161,7 +161,7 @@ Recommended (optional):
 
 ## 6. Hotkeys
 
-- `Open Config`: default `RIGHT_SHIFT`
+- `Open Config`: default `H` + `T` (hold `H` and press `T`)
 - `fixBeaconRangeFreeCam`: unassigned (set as needed)
 - `durabilityWarningEnabled`: unassigned (set as needed)
 - `autoRestockHotbar`: unassigned (set as needed)

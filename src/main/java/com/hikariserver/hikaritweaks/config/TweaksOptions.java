@@ -70,9 +70,11 @@ public final class TweaksOptions {
 
     // ── ホットキー ─────────────────────────────────────────────────────────────
 
-    // 設定画面を開くホットキー（デフォルト: 右シフト）
+    // 設定画面を開くホットキー（デフォルト: H を押しながら T）
+    // malilib のキー組み合わせ表現はカンマ区切り（表示は "H + T"）。
+    // 既定値は ClientConfig と必ず揃えること。
     public static final ConfigHotkey OPEN_CONFIG = new ConfigHotkey(
-            "openConfig", "RIGHT_SHIFT",
+            "openConfig", ClientConfig.DEFAULT_OPEN_CONFIG_HOTKEY,
             "",
             "config.name.openconfig"
     );

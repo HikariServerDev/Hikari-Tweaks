@@ -121,7 +121,7 @@ Minecraft のバージョン群ごとに 1 つの jar を配布しています�
 
 ### 4.1 設定画面を開く
 
-- デフォルトホットキー: `RIGHT_SHIFT`
+- デフォルトホットキー: `H` + `T`（`H` を押しながら `T`。設定ファイル上は `H,T`）
 - または Mod Menu 経由で `Hikari-Tweaks` の設定画面を開く
 
 ### 4.2 設定タブ
@@ -143,7 +143,7 @@ Minecraft のバージョン群ごとに 1 つの jar を配布しています�
 | `totemRestock` | `false` | トーテム自動補充 |
 | `handRestock` | `false` | 手持ち自動補充 |
 | `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | 自動補充対象リスト |
-| `openConfigHotkey` | `RIGHT_SHIFT` | 設定画面を開くキー |
+| `openConfigHotkey` | `H,T` | 設定画面を開くキー（`H` を押しながら `T`） |
 | `scoreboardCustomHud` | `true` | カスタムHUD表示 |
 | `scoreboardHideVanilla` | `true` | バニラ右側スコアボードを隠す |
 | `scoreboardPageSize` | `10` | 1ページの表示件数（1〜50） |
@@ -161,7 +161,7 @@ Minecraft のバージョン群ごとに 1 つの jar を配布しています�
 
 ## 6. ホットキー
 
-- `Open Config`: 既定 `RIGHT_SHIFT`
+- `Open Config`: 既定 `H` + `T`（`H` を押しながら `T`）
 - `fixBeaconRangeFreeCam`: 初期未割当（任意で設定）
 - `durabilityWarningEnabled`: 初期未割当（任意で設定）
 - `autoRestockHotbar`: 初期未割当（任意で設定）
