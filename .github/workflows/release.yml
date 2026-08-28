@@ -1,4 +1,4 @@
-﻿name: Release
+name: Release
 
 on:
   push:
@@ -13,28 +13,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
-      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
-
-      - name: Build
-        run: ./gradlew build
 
       - name: Get version from tag
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      # タグと stonecutter.properties.toml の mod.version がずれていると
+      # 出力ディレクトリ名が食い違うので先に弾く
+      - name: Check tag matches mod.version
+        run: |
+          MOD_VERSION="$(grep -oP '^mod\.version\s*=\s*"\K[^"]+' stonecutter.properties.toml)"
+          if [ "$MOD_VERSION" != "${{ steps.version.outputs.version }}" ]; then
+            echo "tag=${{ steps.version.outputs.version }} but mod.version=$MOD_VERSION"
+            exit 1
+          fi
+
+      - name: Build all Minecraft versions
+        run: ./gradlew chiseledBuild
+
+      - name: Verify built jars
+        run: python scripts/verify-jars.py
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           name: "Hikari-Tweaks v${{ steps.version.outputs.version }}"
-          files: |
-            build/libs/hikari-tweaks-${{ steps.version.outputs.version }}.jar
+          files: build/libs/${{ steps.version.outputs.version }}/*.jar
           generate_release_notes: true
-

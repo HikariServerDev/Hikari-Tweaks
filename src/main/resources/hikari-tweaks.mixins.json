@@ -1,8 +1,8 @@
 {
   "required": true,
   "package": "com.hikariserver.hikaritweaks.mixin",
-  "compatibilityLevel": "JAVA_17",
-  "refmap": "client-hikari-tweaks.refmap.json",
+  "compatibilityLevel": "${java}",
+  "refmap": "hikari-tweaks.refmap.json",
   "client": [
     "MixinOverlayRenderer",
     "MixinInGameHud",

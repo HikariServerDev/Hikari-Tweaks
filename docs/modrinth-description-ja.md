@@ -9,7 +9,7 @@
 
 </div>
 
-**Minecraft 1.18.2 向けのクライアントサイド Fabric ユーティリティ Mod**。[Hikari Server (光鯖)](https://hikariserver.com) で開発されました。カスタマイズ可能なスコアボード HUD（HikariScoreBoard 連携）と便利機能をまとめて提供します。
+**Minecraft 1.17.1 〜 1.21.11 向けのクライアントサイド Fabric ユーティリティ Mod**。[Hikari Server (光鯖)](https://hikariserver.com) で開発されました。カスタマイズ可能なスコアボード HUD（HikariScoreBoard 連携）と便利機能をまとめて提供します。
 
 ## 機能
 
@@ -51,10 +51,34 @@
 
 ## 動作環境
 
-- Minecraft **1.18.2**
-- **Fabric Loader** >= 0.14.0
+- Minecraft **1.17.1 〜 1.21.11**（Fabric）
+- **Fabric Loader** >= 0.14.0（MC 1.17.1 〜 1.20.4）/ >= 0.15.10（MC 1.20.5 以降）
 - **Fabric API**
-- **[MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib)**
+- **[MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib)** — jar ごとに下限バージョンを宣言しています。ビルドに使用した版以降の MaLiLib が必要です
+
+### 対応バージョン一覧
+
+Minecraft のバージョン群ごとに 1 つの jar を配布しています。使用中のバージョンに合うものをダウンロードしてください。
+
+| 配布 jar | 対応する Minecraft バージョン |
+|---|---|
+| `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 |
+| `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 |
+| `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 |
+| `hikari-tweaks-<version>+1.19.2.jar` | 1.19, 1.19.1, 1.19.2 |
+| `hikari-tweaks-<version>+1.19.3.jar` | 1.19.3 |
+| `hikari-tweaks-<version>+1.19.4.jar` | 1.19.4 |
+| `hikari-tweaks-<version>+1.20.1.jar` | 1.20, 1.20.1 |
+| `hikari-tweaks-<version>+1.20.2.jar` | 1.20.2 |
+| `hikari-tweaks-<version>+1.20.4.jar` | 1.20.3, 1.20.4 |
+| `hikari-tweaks-<version>+1.20.6.jar` | 1.20.5, 1.20.6 |
+| `hikari-tweaks-<version>+1.21.1.jar` | 1.21, 1.21.1 |
+| `hikari-tweaks-<version>+1.21.3.jar` | 1.21.2, 1.21.3 |
+| `hikari-tweaks-<version>+1.21.4.jar` | 1.21.4 |
+| `hikari-tweaks-<version>+1.21.5.jar` | 1.21.5 |
+| `hikari-tweaks-<version>+1.21.8.jar` | 1.21.6, 1.21.7, 1.21.8 |
+| `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 |
+| `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 |
 
 ## 任意で連携できる Mod
 
