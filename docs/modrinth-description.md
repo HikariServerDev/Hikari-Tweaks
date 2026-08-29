@@ -80,10 +80,18 @@ One jar is published per Minecraft version group. Download the one matching your
 | `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 |
 | `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 |
 
+## Opening the config screen
+
+Press **`H` + `T`** in game — hold `H`, then press `T`. The order matters.
+
+The key can be changed from the **Hotkeys** tab of the config screen, or through
+[Mod Menu](https://modrinth.com/mod/modmenu) if you prefer to reach it that way.
+Scoreboard page-turning hotkeys are unbound by default and can be assigned there too.
+
 ## Optional
 
 - **[MiniHUD](https://www.curseforge.com/minecraft/mc-mods/minihud)** — Required for the beacon range fix feature
-- **[Mod Menu](https://modrinth.com/mod/modmenu)** — In-game access to the config screen
+- **[Mod Menu](https://modrinth.com/mod/modmenu)** — An alternative way to reach the config screen, if you would rather not use the hotkey
 - **[HikariScoreBoard](https://modrinth.com/mod/hikariscoreboard)** (server-side) — Enables the custom scoreboard HUD data source. Also works without it, but with no ranking data displayed.
 
 ## Credits

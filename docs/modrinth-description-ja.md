@@ -80,10 +80,19 @@ Minecraft のバージョン群ごとに 1 つの jar を配布しています�
 | `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 |
 | `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 |
 
+## 設定画面の開き方
+
+ゲーム中に **`H` + `T`** を押します（`H` を押しながら `T`）。**押す順序が重要**で、
+`T` を先に押すとチャットが開きます。
+
+キーは設定画面の **Hotkeys** タブから変更できます。
+[Mod Menu](https://modrinth.com/mod/modmenu) を導入していれば、そちらからも開けます。
+スコアボードのページ送りは既定で未割り当てなので、必要なら同じタブで割り当ててください。
+
 ## 任意で連携できる Mod
 
 - **[MiniHUD](https://www.curseforge.com/minecraft/mc-mods/minihud)** — ビーコン範囲補正機能を使う場合に必要
-- **[Mod Menu](https://modrinth.com/mod/modmenu)** — ゲーム内から設定画面にアクセスできるようになる
+- **[Mod Menu](https://modrinth.com/mod/modmenu)** — ホットキーを使わずに設定画面へ行きたい場合の代替手段
 - **[HikariScoreBoard](https://modrinth.com/mod/hikariscoreboard)**（サーバー側） — カスタムスコアボード HUD のデータソースを提供。未導入でも動作しますが、ランキングは表示されません。
 
 ## Credits
