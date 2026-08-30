@@ -27,3 +27,6 @@ Thumbs.db
 hs_err_pid*
 replay_pid*
 *.hprof
+# Modrinth アップロード用のステージング置き場。
+# jar を含むためコミットしない。
+Modrinth-Versions/

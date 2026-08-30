@@ -4,7 +4,7 @@
 
 # Hikari-Tweaks
 
-[![License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://github.com/Tamago0314/Hikari-Tweaks/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://github.com/HikariServerDev/Hikari-Tweaks/blob/main/LICENSE)
 [![Modrinth](https://img.shields.io/modrinth/dt/hikari-tweaks?label=Modrinth%20Downloads)](https://modrinth.com/mod/hikari-tweaks)
 
 </div>
