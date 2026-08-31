@@ -33,7 +33,8 @@
 
 ### 1.3 Hotbar Auto-Restock
 
-- When you open a container, automatically restocks specified items from the container into your hotbar
+- When you open a **real container block** (chest, barrel, shulker box, hopper...), automatically restocks specified items from the container into your hotbar
+- Deliberately does **not** fire for chest minecarts/boats, ender chests, or plugin-driven menus (shops, virtual storage). Those are indistinguishable from real containers on the client, and clicking a shop's buttons by mistake would cost you real resources, so this fails closed
 - Toggleable (hotkey supported)
 
 Notes:
