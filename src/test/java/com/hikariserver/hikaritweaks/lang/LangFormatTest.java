@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.IllegalFormatException;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -25,9 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-// lang ファイルの書式指定子（%d など）を機械的に検証するテスト。
+// lang ファイルを機械的に検証するテスト。
+//   (1) 書式指定子（%d など）が呼び出し側の引数と合っているか
+//   (2) 設定オプションの config.name.* / config.comment.* が過不足なくそろっているか
 //
-// なぜ必要か:
+// なぜ (1) が必要か:
 //   vanilla の I18n.translate(String key, Object... args) は
 //   内部で String.format(訳文, args) を実行し、IllegalFormatException を
 //   握り潰して "Format error: " + 訳文 を返す実装になっている（全 17 ターゲットで同一）。
@@ -38,6 +41,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 //     (2) 訳文中の生の "%" を "%%" にエスケープしていなかった durabilitywarningenabled
 //   このテストは Minecraft を一切起動せず（lang の JSON を読んで String.format を
 //   直接叩くだけ）、両方を CI で検出できる。
+//
+// なぜ (2) が必要か:
+//   malilib は設定画面のラベルとホバーコメントを "config.name.<設定名の小文字>" /
+//   "config.comment.<設定名の小文字>" で引く。キーが無くても例外は飛ばず、
+//   バージョンによって「生の camelCase」「空のホバー」「'Foo Bar Comment?'」の
+//   いずれかが表示されるだけなので、実機を起動しない限り気付けない
+//   （malilib 世代ごとの挙動は docs/multiversion/PLAN.md §3.10）。
+//   設定を足す／消すときにキーを片方だけ直す事故もここで止める。
 //
 // 前提: このモッドの lang が使う変換文字は %d と %% だけ。
 //   %f や %s を新たに使うときは DUMMY_ARG の型を見直すこと。
@@ -57,6 +68,24 @@ class LangFormatTest {
         EXPECTED_ARG_COUNT.put("hikaritweaks.scoreboard_tab.ranking_summary", 3);
         EXPECTED_ARG_COUNT.put("hikaritweaks.scoreboard_tab.page_size_value", 1);
     }
+
+    // 設定オプションの名前（config/TweaksOptions.java の定義と必ず揃えること）。
+    // ここに書いた名前ごとに config.name.<小文字> と config.comment.<小文字> の
+    // 両方が全ロケールに存在することを検証する。lang キーの綴りは
+    // compat/MaliLibConfigCompat が設定名から機械的に導いているので、
+    // 設定を足したらこのリストにも足せばキーの抜けが CI で止まる。
+    private static final String[] CONFIG_NAMES = {
+            "fixBeaconRangeFreeCam",
+            "durabilityWarningEnabled",
+            "autoRestockHotbar",
+            "totemRestock",
+            "handRestock",
+            "hotbarRestockList",
+            "handRestockList",
+            "openConfig",
+            "scoreboardNextPage",
+            "scoreboardPrevPage",
+    };
 
     // String.format に流し込むダミー引数（%d を満たせる型）
     private static final Object DUMMY_ARG = Integer.valueOf(1);
@@ -199,5 +228,55 @@ class LangFormatTest {
         }
         assertEquals("[]", problems.toString(),
                 "String.format が失敗する訳文がある。実機では \"Format error: ...\" と表示される。");
+    }
+
+    // ── 設定オプションの lang キー ─────────────────────────────────────────
+
+    @Test
+    @DisplayName("全設定オプションに config.name.* と config.comment.* がそろっている")
+    void everyConfigHasNameAndCommentKeys() {
+        List<String> problems = new ArrayList<>();
+        for (String locale : LOCALES) {
+            Map<String, String> lang = load(locale);
+            for (String name : CONFIG_NAMES) {
+                String lower = name.toLowerCase(Locale.ROOT);
+                for (String key : new String[] { "config.name." + lower, "config.comment." + lower }) {
+                    String value = lang.get(key);
+                    if (value == null) {
+                        problems.add(locale + ": " + key + " が無い（設定 " + name + "）");
+                    } else if (value.isBlank()) {
+                        problems.add(locale + ": " + key + " が空（設定 " + name + "）");
+                    }
+                }
+            }
+        }
+        assertEquals("[]", problems.toString(),
+                "設定画面のラベル／ホバーコメントの lang キーが足りない。"
+                        + "malilib はキーが無くても例外を出さず、バージョンによって"
+                        + "生の camelCase や \"... Comment?\" を表示するだけなので実機でしか気付けない。");
+    }
+
+    @Test
+    @DisplayName("config.name.* と config.comment.* に余分なキーが無い")
+    void noOrphanConfigKeys() {
+        TreeSet<String> expected = new TreeSet<>();
+        for (String name : CONFIG_NAMES) {
+            String lower = name.toLowerCase(Locale.ROOT);
+            expected.add("config.name." + lower);
+            expected.add("config.comment." + lower);
+        }
+
+        List<String> problems = new ArrayList<>();
+        for (String locale : LOCALES) {
+            for (String key : load(locale).keySet()) {
+                if ((key.startsWith("config.name.") || key.startsWith("config.comment."))
+                        && !expected.contains(key)) {
+                    problems.add(locale + ": " + key);
+                }
+            }
+        }
+        assertEquals("[]", problems.toString(),
+                "TweaksOptions に対応する設定が無い config.* キーが残っている。"
+                        + "設定を消したときは lang からもキーを消すこと。");
     }
 }
