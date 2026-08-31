@@ -58,17 +58,22 @@ public final class PositionEditorScreen extends Screen {
     protected void init() {
         super.init();
 
+        // 座標は PositionEditorLayout に集約している。
+        // プレビューのドラッグ判定（handleDragStart）が同じ矩形を参照して
+        // 「ボタンの上ではドラッグを始めない」を判断するため、
+        // ここに座標をベタ書きすると両者がずれる。
         // スケールスライダー（0.5–3.0 を 0–1 に正規化して渡す）
         scaleSlider = new ScaleSlider(
-                width / 2 - 100, height - 68,
-                200, 20,
+                PositionEditorLayout.sliderX(width), PositionEditorLayout.sliderY(height),
+                PositionEditorLayout.SLIDER_W, PositionEditorLayout.SLIDER_H,
                 (tempScale - 0.5f) / 2.5f // 0.5-3.0 → 0-1
         );
         addDrawableChild(scaleSlider);
 
         // 確定ボタン：tempX/Y/Scale を設定に書き込んで保存する
         addDrawableChild(WidgetCompat.button(
-                width / 2 - 105, height - 42, 100, 20,
+                PositionEditorLayout.confirmX(width), PositionEditorLayout.buttonY(height),
+                PositionEditorLayout.BUTTON_W, PositionEditorLayout.BUTTON_H,
                 TextCompat.literal("§a" + I18n.translate("hikaritweaks.button.confirm")),
                 btn -> {
                     ClientConfig cfg = ClientConfigManager.config;
@@ -82,7 +87,8 @@ public final class PositionEditorScreen extends Screen {
 
         // キャンセルボタン：変更を破棄して親画面へ戻る
         addDrawableChild(WidgetCompat.button(
-                width / 2 + 5, height - 42, 100, 20,
+                PositionEditorLayout.cancelX(width), PositionEditorLayout.buttonY(height),
+                PositionEditorLayout.BUTTON_W, PositionEditorLayout.BUTTON_H,
                 TextCompat.literal("§c" + I18n.translate("hikaritweaks.button.cancel")),
                 btn -> returnToParent()
         ));
@@ -169,12 +175,12 @@ public final class PositionEditorScreen extends Screen {
         int boxH    = (lines + 1) * lineH_ + 2;
 
         float sc = tempScale;
-        int scaledW = (int)(boxW * sc);
-        int scaledH = (int)(boxH * sc);
+        int scaledW = PositionEditorLayout.scaled(boxW, sc);
+        int scaledH = PositionEditorLayout.scaled(boxH, sc);
 
         // % → ピクセル変換してアンカー座標を求める
-        int anchorX = (int)(width  * tempX / 100.0);
-        int anchorY = (int)(height * tempY / 100.0);
+        int anchorX = PositionEditorLayout.anchorX(width,  tempX);
+        int anchorY = PositionEditorLayout.anchorY(height, tempY);
 
         int drawX = anchorX - scaledW;
         int drawY = anchorY - scaledH / 2;
@@ -280,15 +286,28 @@ public final class PositionEditorScreen extends Screen {
     }
     //?}
 
-    // プレビュー上でクリックされたらドラッグを開始する（処理したら true）
+    // プレビュー上でクリックされたらドラッグを開始する（処理したら true）。
+    //
+    // ★ ここで true を返すと super.mouseClicked() へ落ちず、
+    //   プレビュー矩形の下にあるウィジェットは一切クリックできなくなる。
+    //   プレビューはアンカー（X%,Y%）を右端・上下中央として左上へ広がるので、
+    //   X=50% / Y=100% / スケール 3.0 では 390x168px の矩形が画面中央下に来て
+    //   確定ボタン（width/2-105〜width/2-5, height-42〜height-22）を丸ごと覆う。
+    //   その状態で「確定」を押してもドラッグが始まるだけで、
+    //   **今合わせた位置を保存できない**（キャンセルは矩形の外なので押せる）。
+    //   スケールが大きいときはスケールスライダーにも部分的に重なる。
+    //   そのため PositionEditorLayout.startsPreviewDrag() が
+    //   「下部コントロールの上ではドラッグを始めない」を担保する。
     private boolean handleDragStart(double mouseX, double mouseY, int button) {
-        if (button == 0 && isMouseOverPreview((int)mouseX, (int)mouseY)) {
+        if (button == 0 && PositionEditorLayout.startsPreviewDrag(
+                mouseX, mouseY, width, height, tempX, tempY, tempScale,
+                PREVIEW_W, calcPreviewH())) {
             dragging = true;
             float sc  = tempScale;
-            int scaledW = (int)(PREVIEW_W * sc);
-            int scaledH = (int)(calcPreviewH() * sc);
-            int drawX   = (int)(width  * tempX / 100.0) - scaledW;
-            int drawY   = (int)(height * tempY / 100.0) - scaledH / 2;
+            int scaledW = PositionEditorLayout.scaled(PREVIEW_W, sc);
+            int scaledH = PositionEditorLayout.scaled(calcPreviewH(), sc);
+            int drawX   = PositionEditorLayout.previewX(width,  tempX, scaledW);
+            int drawY   = PositionEditorLayout.previewY(height, tempY, scaledH);
             // クリック位置とプレビュー左上の差をオフセットとして保持する
             dragOffsetX = (int)mouseX - drawX;
             dragOffsetY = (int)mouseY - drawY;
@@ -301,8 +320,8 @@ public final class PositionEditorScreen extends Screen {
     private boolean handleDrag(double mouseX, double mouseY, int button) {
         if (dragging && button == 0) {
             float sc    = tempScale;
-            int scaledW = (int)(PREVIEW_W * sc);
-            int scaledH = (int)(calcPreviewH() * sc);
+            int scaledW = PositionEditorLayout.scaled(PREVIEW_W, sc);
+            int scaledH = PositionEditorLayout.scaled(calcPreviewH(), sc);
             // マウス座標からアンカー位置を逆算する
             int newAnchorX = (int)mouseX - dragOffsetX + scaledW;
             int newAnchorY = (int)mouseY - dragOffsetY + scaledH / 2;
@@ -344,17 +363,6 @@ public final class PositionEditorScreen extends Screen {
     *///?}
 
     // ── ヘルパー ─────────────────────────────────────────────
-
-    // マウスカーソルがプレビュー上にあるかどうかを判定する
-    private boolean isMouseOverPreview(int mouseX, int mouseY) {
-        float sc    = tempScale;
-        int scaledW = (int)(PREVIEW_W * sc);
-        int scaledH = (int)(calcPreviewH() * sc);
-        int drawX   = (int)(width  * tempX / 100.0) - scaledW;
-        int drawY   = (int)(height * tempY / 100.0) - scaledH / 2;
-        return mouseX >= drawX && mouseX <= drawX + scaledW
-                && mouseY >= drawY && mouseY <= drawY + scaledH;
-    }
 
     // プレビューのボックス高さを計算する（ダミーデータは 5 行固定）
     private static int calcPreviewH() {

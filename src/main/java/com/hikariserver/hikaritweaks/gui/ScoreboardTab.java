@@ -57,6 +57,13 @@ public final class ScoreboardTab {
     private static final int OFFSCREEN   = -2000;
     // カテゴリヘッダーの高さ
     private static final int CATEGORY_H  = 14;
+    // プレイヤーリスト応答を待つ上限（ミリ秒）。
+    //
+    // ScoreboardPacketClient.requestPlayerList() は、サーバーがチャンネルを
+    // 登録していない（＝HikariScoreBoard が入っていない）とき **何も送らずに返る**。
+    // 応答が来ないので waiting が下りず、バニラサーバーやシングルプレイでは
+    // 「Loading…」のまま永久に固まる。時間で諦めて no_data 表示へ落とす。
+    private static final long REQUEST_TIMEOUT_MS = 3000L;
 
     // ───── 状態 ─────
     // 親画面への参照
@@ -79,6 +86,8 @@ public final class ScoreboardTab {
     private boolean loaded        = false;
     // サーバーへリクエスト中かどうかのフラグ
     private boolean waiting       = false;
+    // waiting を立てた時刻（タイムアウト判定用）
+    private long    waitingSince  = 0L;
     // スクロールバーをドラッグ中かどうか
     private boolean draggingScrollbar = false;
     // ドラッグ開始時のマウス Y 座標
@@ -94,10 +103,24 @@ public final class ScoreboardTab {
     private HideableButton bulkShowBtn;
     private HideableButton bulkHideBtn;
     private HideableButton clearSelectionBtn;
-    // 各行の表示切り替えボタン（rowButtons と同じ順序）
-    private final List<HideableButton> rowButtons = new ArrayList<>();
-    // チェックボックス代わりの選択トグルボタン（rowButtons と同じ順序）
-    private final List<HideableButton> selectButtons = new ArrayList<>();
+    // 各行の表示切り替えボタンのプール
+    //
+    // ★ これは「今表示している行のリスト」ではなく **使い回すためのプール** である。
+    //   host.addButton は malilib の GuiBase.addButton へ委譲されるが、GuiBase は
+    //   private な List<ButtonBase> buttons に足すだけで、
+    //   **1 個ずつ取り除く API を持たない**（removeWidget(WidgetBase) は
+    //   ButtonBase を渡してもコンパイルは通るが widgets リストしか見ないので何もしない。
+    //   実質 clearButtons() で全消しするしかなく、それを呼ぶのは initGui() だけ）。
+    //   一方 GuiBase.drawButtons / onMouseClicked は毎フレーム・毎クリック
+    //   buttons を端から端まで走査する。
+    //   そのため行ごとに new し直すと、100 人サーバーで 1 回更新するたびに
+    //   200 個の死んだボタンが GuiBase 側へ積み上がり、画面を開いている間ずっと
+    //   際限なく増え続ける。作ったボタンは捨てずに再利用する。
+    private final List<RowButton> rowButtons = new ArrayList<>();
+    // チェックボックス代わりの選択トグルボタンのプール（rowButtons と同じ添字）
+    private final List<RowButton> selectButtons = new ArrayList<>();
+    // プールのうち、実際にエントリへ割り当て済みの個数（先頭から連続）
+    private int activeRowCount = 0;
 
     // 表示設定タブ専用ウィジェット
     private HideableSlider pageSizeSlider;
@@ -153,7 +176,7 @@ public final class ScoreboardTab {
                     if (selectedUuids.isEmpty()) return;
                     for (String uuid : selectedUuids) ScoreboardPacketClient.toggleBlockIfNeeded(uuid, false);
                     selectedUuids.clear();
-                    waiting = true;
+                    setWaiting(true);
                 });
         // 選択エントリを一括非表示にするボタン
         bulkHideBtn = host.addButton(
@@ -162,7 +185,7 @@ public final class ScoreboardTab {
                     if (selectedUuids.isEmpty()) return;
                     for (String uuid : selectedUuids) ScoreboardPacketClient.toggleBlockIfNeeded(uuid, true);
                     selectedUuids.clear();
-                    waiting = true;
+                    setWaiting(true);
                 });
         // 選択をすべて解除するボタン
         clearSelectionBtn = host.addButton(
@@ -173,13 +196,13 @@ public final class ScoreboardTab {
                 });
 
         // ── 表示設定タブ ──
-        ClientConfig cfg = ClientConfigManager.config;
         int lx = x + 8;
 
         // ページサイズスライダー（1–50）
+        // ★ コールバックに ClientConfig のインスタンスを渡さないこと（下の NOTE を参照）
         pageSizeSlider = host.addWidget(
                 new HideableSlider(lx + 100, dispRowY(0), 120, ROW_HEIGHT,
-                        new PageSizeCallback(cfg)));
+                        new PageSizeCallback()));
 
         // 前ページ・次ページ・先頭へのボタン
         prevPageBtn = host.addButton(new HideableButton(
@@ -207,7 +230,7 @@ public final class ScoreboardTab {
         // スケールスライダー（0.5–3.0）
         scaleSlider = host.addWidget(
                 new HideableSlider(lx + 60, dispRowY(3), 160, ROW_HEIGHT,
-                        new ScaleCallback(cfg)));
+                        new ScaleCallback()));
 
         // (スコア数値の補間トグルは廃止。補間は常時 ON。
         //  docs/ranking-v2-protocol.md 5.2)
@@ -248,6 +271,9 @@ public final class ScoreboardTab {
         ScoreboardPacketClient.setOnRankingUpdated(null);
         selectedUuids.clear();
         loaded = false;
+        // スライダーの保存は saveDeferred() で間引いているので、
+        // タブを離れる前に保留分を書き出しておく
+        ClientConfigManager.flushPendingSave();
     }
 
     // ───── サブタブ切り替え ─────
@@ -269,8 +295,7 @@ public final class ScoreboardTab {
         setShown(bulkShowBtn, players);
         setShown(bulkHideBtn, players);
         setShown(clearSelectionBtn, players);
-        for (HideableButton b : rowButtons)    setShown(b, players);
-        for (HideableButton b : selectButtons) setShown(b, players);
+        applyRowVisibility();
 
         // 表示設定タブ専用ウィジェットの表示切り替え
         boolean display = !players;
@@ -288,60 +313,105 @@ public final class ScoreboardTab {
         if (btn != null) btn.setShown(shown);
     }
 
-    // ───── 行ボタン再構築 ─────
-
-    // 現在のエントリリストに基づいて行ボタンを再生成する
-    private void rebuildRowButtons() {
-        // 既存ボタンを退避して一覧をクリアする
-        for (HideableButton b : rowButtons)    b.setShown(false);
-        for (HideableButton b : selectButtons) b.setShown(false);
-        rowButtons.clear();
-        selectButtons.clear();
-
-        // プレイヤータブ以外は行ボタンが不要
-        if (activeSubTab != SubTab.PLAYERS) return;
-
-        // 表示中と非表示でカテゴリ分け
-        List<PlayerListEntry> visible  = entries.stream().filter(e -> !e.isBlocked()).collect(Collectors.toList());
-        List<PlayerListEntry> blocked  = entries.stream().filter(PlayerListEntry::isBlocked).collect(Collectors.toList());
-
-        // 表示中カテゴリ
-        // カテゴリヘッダーはボタンではなく render() 側で描画するので、
-        // rowButtons にはエントリ数だけ登録し、描画時にオフセット計算する
-        addEntryButtons(visible);
-        addEntryButtons(blocked);
+    // 行ボタンの表示状態をまとめて反映する。
+    //
+    // - 未割り当てのプール要素は常に非表示（GuiBase 側には残るが押せず描かれない）
+    // - 応答待ち中も非表示にする。malilib は自前のループで
+    //   ボタンを描画・クリック処理するので、render() 側で早期リターンしても
+    //   ボタンだけは「Loading…」の上に生きたまま残ってしまう。
+    //   そこで押せた 2 回目のクリックはサーバーで再度トグルされ、
+    //   1 回目の操作を打ち消す（＝何も変わらないうえ反応も無い）。
+    private void applyRowVisibility() {
+        boolean show = activeSubTab == SubTab.PLAYERS && !waiting;
+        for (int i = 0; i < rowButtons.size(); i++) {
+            boolean shown = show && i < activeRowCount;
+            rowButtons.get(i).setShown(shown);
+            selectButtons.get(i).setShown(shown);
+        }
     }
 
-    // エントリリストの各行に表示切り替えボタンと選択ボタンを追加する
-    private void addEntryButtons(List<PlayerListEntry> list) {
-        for (PlayerListEntry entry : list) {
+    // 応答待ちフラグを切り替え、行ボタンの表示状態も同時に更新する
+    private void setWaiting(boolean value) {
+        waiting = value;
+        if (value) waitingSince = System.currentTimeMillis();
+        applyRowVisibility();
+    }
+
+    // ───── 行ボタン再構築 ─────
+
+    // 現在のエントリリストに基づいて行ボタンを割り当て直す。
+    //
+    // ★ サブタブが PLAYERS でなくても必ず割り当てまで行うこと。
+    //   以前はここで早期リターンしていたため、「行の表示/非表示を押す →
+    //   すぐ表示設定タブへ切り替える → 応答が届く」の順で操作すると
+    //   ボタンが 1 つも無い状態で確定してしまい、プレイヤータブへ戻っても
+    //   名前と枠だけでボタンもチェックボックスも出てこなかった
+    //   （switchSubTab は再構築しないので Refresh を押すまで直らない）。
+    //   表示するかどうかは applyRowVisibility() だけが決める。
+    private void rebuildRowButtons() {
+        // 表示中と非表示でカテゴリ分けし、描画順（表示中 → 非表示）に並べる。
+        // カテゴリヘッダーはボタンではなく render() 側で描画するので、
+        // プールにはエントリ数だけ割り当て、描画時にオフセット計算する。
+        List<PlayerListEntry> visible  = entries.stream().filter(e -> !e.isBlocked()).collect(Collectors.toList());
+        List<PlayerListEntry> blocked  = entries.stream().filter(PlayerListEntry::isBlocked).collect(Collectors.toList());
+        List<PlayerListEntry> ordered  = new ArrayList<>(visible.size() + blocked.size());
+        ordered.addAll(visible);
+        ordered.addAll(blocked);
+
+        // 足りない分だけプールを伸ばす（既存分は使い回す）
+        ensureRowCapacity(ordered.size());
+
+        // プールの先頭から順にエントリを割り当てる
+        for (int i = 0; i < ordered.size(); i++) {
+            PlayerListEntry entry = ordered.get(i);
+            RowButton btn = rowButtons.get(i);
+            btn.bind(entry.uuid());
+            btn.setDisplayString(entry.isBlocked()
+                    ? "§c" + I18n.translate("hikaritweaks.status.hidden")
+                    : "§a" + I18n.translate("hikaritweaks.status.shown"));
+
+            RowButton selBtn = selectButtons.get(i);
+            selBtn.bind(entry.uuid());
+            selBtn.setDisplayString(selectedUuids.contains(entry.uuid()) ? "§e☑" : "§7☐");
+        }
+        // 余ったプール要素は未割り当てへ戻す（古い UUID を押せないようにする）
+        for (int i = ordered.size(); i < rowButtons.size(); i++) {
+            rowButtons.get(i).bind(null);
+            selectButtons.get(i).bind(null);
+        }
+        activeRowCount = ordered.size();
+
+        applyRowVisibility();
+    }
+
+    // 行ボタンのプールを required 個まで伸ばす。
+    // 一度 host へ渡したボタンは取り除けないので、ここでしか new しない。
+    private void ensureRowCapacity(int required) {
+        while (rowButtons.size() < required) {
             // 行表示/非表示トグルボタン（初期位置は OFFSCREEN で後から配置）
-            HideableButton btn = host.addButton(
-                    new HideableButton(LIST_X + 26, OFFSCREEN, BUTTON_W, ROW_HEIGHT - 2,
-                            entry.isBlocked() ? "§c" + I18n.translate("hikaritweaks.status.hidden") : "§a" + I18n.translate("hikaritweaks.status.shown")),
-                    (b, mb) -> {
-                        ScoreboardPacketClient.toggleBlock(entry.uuid());
-                        waiting = true;
-                    });
-            btn.setShown(true);
+            RowButton btn = new RowButton(LIST_X + 26, OFFSCREEN, BUTTON_W, ROW_HEIGHT - 2, "");
+            host.addButton(btn, (b, mb) -> {
+                String uuid = btn.uuid();
+                if (uuid == null) return;
+                ScoreboardPacketClient.toggleBlock(uuid);
+                setWaiting(true);
+            });
             rowButtons.add(btn);
 
             // 選択チェックボックス相当（選択状態に応じてラベルを変える）
-            boolean sel = selectedUuids.contains(entry.uuid());
-            HideableButton selBtn = host.addButton(
-                    new HideableButton(LIST_X, OFFSCREEN, 22, ROW_HEIGHT - 2,
-                            sel ? "§e☑" : "§7☐"),
-                    (b, mb) -> {
-                        // クリックで選択・選択解除をトグルする
-                        if (selectedUuids.contains(entry.uuid())) {
-                            selectedUuids.remove(entry.uuid());
-                            b.setDisplayString("§7☐");
-                        } else {
-                            selectedUuids.add(entry.uuid());
-                            b.setDisplayString("§e☑");
-                        }
-                    });
-            selBtn.setShown(true);
+            RowButton selBtn = new RowButton(LIST_X, OFFSCREEN, 22, ROW_HEIGHT - 2, "");
+            host.addButton(selBtn, (b, mb) -> {
+                String uuid = selBtn.uuid();
+                if (uuid == null) return;
+                // クリックで選択・選択解除をトグルする
+                if (selectedUuids.contains(uuid)) {
+                    selectedUuids.remove(uuid);
+                    selBtn.setDisplayString("§7☐");
+                } else {
+                    selectedUuids.add(uuid);
+                    selBtn.setDisplayString("§e☑");
+                }
+            });
             selectButtons.add(selBtn);
         }
     }
@@ -351,6 +421,11 @@ public final class ScoreboardTab {
     // 毎フレーム呼ばれる描画メソッド
     public void render(DrawCtx ctx, int mouseX, int mouseY, float delta) {
         TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+
+        // 応答が来ないまま時間切れになったら待機状態を解除する
+        if (waiting && System.currentTimeMillis() - waitingSince >= REQUEST_TIMEOUT_MS) {
+            setWaiting(false);
+        }
 
         // サブタブボタンを描画する
         renderSubTabButton(ctx, tr, x,      y, 90, SUBTAB_H, SubTab.PLAYERS, mouseX, mouseY);
@@ -418,17 +493,15 @@ public final class ScoreboardTab {
         List<PlayerListEntry> blockedEntries = entries.stream().filter(PlayerListEntry::isBlocked).collect(Collectors.toList());
 
         // 仮想行リスト（カテゴリヘッダー込み）を構築してスクロール計算に使う
-        int totalVirtualH = 0;
-        if (!visibleEntries.isEmpty()) totalVirtualH += CATEGORY_H + visibleEntries.size() * ROW_HEIGHT;
-        if (!blockedEntries.isEmpty()) totalVirtualH += CATEGORY_H + blockedEntries.size() * ROW_HEIGHT;
+        int totalVirtualH = ScoreboardListLayout.totalVirtualHeight(
+                visibleEntries.size(), blockedEntries.size(), CATEGORY_H, ROW_HEIGHT);
 
-        // 一括操作ボタン行(20px)分オフセット
-        int listTop    = y + SUBTAB_H + ROW_HEIGHT + 20 + 4;
-        int listBottom = y + height - 4;
+        int listTop    = listTop();
+        int listBottom = listBottom();
         int visibleH   = listBottom - listTop;
-        int maxScroll  = Math.max(0, totalVirtualH - visibleH);
+        int maxScroll  = ScoreboardListLayout.maxScroll(totalVirtualH, visibleH);
         // スクロール位置を有効範囲に収める
-        scrollOffset   = Math.max(0, Math.min(scrollOffset, maxScroll));
+        scrollOffset   = ScoreboardListLayout.clampScroll(scrollOffset, maxScroll);
 
         int listWidth = width - SCROLLBAR_W - 4;
         // リスト領域の外へはみ出した行を切り落とす
@@ -454,7 +527,7 @@ public final class ScoreboardTab {
                 int rowY = drawY + i * ROW_HEIGHT;
                 boolean inView = rowY + ROW_HEIGHT >= listTop && rowY <= listBottom;
 
-                if (rowBtnIndex < rowButtons.size()) {
+                if (rowBtnIndex < activeRowCount) {
                     HideableButton btn = rowButtons.get(rowBtnIndex);
                     HideableButton selBtn = selectButtons.size() > rowBtnIndex ? selectButtons.get(rowBtnIndex) : null;
                     if (inView) {
@@ -498,7 +571,7 @@ public final class ScoreboardTab {
                 int rowY = drawY + i * ROW_HEIGHT;
                 boolean inView = rowY + ROW_HEIGHT >= listTop && rowY <= listBottom;
 
-                if (rowBtnIndex < rowButtons.size()) {
+                if (rowBtnIndex < activeRowCount) {
                     HideableButton btn = rowButtons.get(rowBtnIndex);
                     HideableButton selBtn = selectButtons.size() > rowBtnIndex ? selectButtons.get(rowBtnIndex) : null;
                     if (inView) {
@@ -524,8 +597,10 @@ public final class ScoreboardTab {
             }
         }
 
-        // 退避（残像防止）：可視範囲外のボタンを画面外へ追いやる
-        while (rowBtnIndex < rowButtons.size()) {
+        // 退避（残像防止）：可視範囲外のボタンを画面外へ追いやる。
+        // activeRowCount より後ろのプール要素は applyRowVisibility() が
+        // すでに非表示（＝OFFSCREEN）にしているので触らない。
+        while (rowBtnIndex < activeRowCount) {
             rowButtons.get(rowBtnIndex).setY(OFFSCREEN);
             if (selectButtons.size() > rowBtnIndex) selectButtons.get(rowBtnIndex).setY(OFFSCREEN);
             rowBtnIndex++;
@@ -536,12 +611,9 @@ public final class ScoreboardTab {
 
         // スクロールバーを描画する（スクロールが必要な場合のみ）
         if (maxScroll > 0) {
-            int barH   = Math.max(24, visibleH * visibleH / Math.max(1, totalVirtualH));
-            barH       = Math.min(barH, visibleH);
-            int trackH = visibleH - barH;
-            int barY   = listTop + (trackH > 0 ? trackH * scrollOffset / maxScroll : 0);
-            barY       = Math.min(barY, listBottom - barH);
-            int barX   = x + width - SCROLLBAR_W - 2;
+            int barH = ScoreboardListLayout.scrollbarHeight(visibleH, totalVirtualH);
+            int barY = ScoreboardListLayout.scrollbarY(listTop, listBottom, barH, visibleH, scrollOffset, maxScroll);
+            int barX = x + width - SCROLLBAR_W - 2;
             boolean hov = mouseX >= barX && mouseX <= barX + SCROLLBAR_W
                     && mouseY >= barY && mouseY <= barY + barH;
             // トラック背景を描画する
@@ -588,6 +660,16 @@ public final class ScoreboardTab {
 
     // ───── 座標ヘルパー ─────
 
+    // プレイヤー一覧の上端 Y 座標（サブタブ + 一括操作ボタン行(20px) 分のオフセット）
+    private int listTop() {
+        return y + SUBTAB_H + ROW_HEIGHT + 20 + 4;
+    }
+
+    // プレイヤー一覧の下端 Y 座標
+    private int listBottom() {
+        return y + height - 4;
+    }
+
     // 表示設定タブの各行の Y 座標を返す
     private int dispRowY(int index) {
         int base = y + SUBTAB_H + 8;
@@ -621,24 +703,14 @@ public final class ScoreboardTab {
         if (button != 0 || activeSubTab != SubTab.PLAYERS) return false;
 
         // カテゴリ込みの totalVirtualH を再計算してスクロールバー領域を判定する
-        List<PlayerListEntry> visibleEntries = entries.stream().filter(e -> !e.isBlocked()).collect(Collectors.toList());
-        List<PlayerListEntry> blockedEntries = entries.stream().filter(PlayerListEntry::isBlocked).collect(Collectors.toList());
-        int totalVirtualH = 0;
-        if (!visibleEntries.isEmpty()) totalVirtualH += CATEGORY_H + visibleEntries.size() * ROW_HEIGHT;
-        if (!blockedEntries.isEmpty()) totalVirtualH += CATEGORY_H + blockedEntries.size() * ROW_HEIGHT;
+        int totalVirtualH = currentTotalVirtualHeight();
 
-        // 一括操作ボタン行(20px)分オフセット
-        int listTop    = y + SUBTAB_H + ROW_HEIGHT + 20 + 4;
-        int listBottom = y + height - 4;
+        int listTop    = listTop();
+        int listBottom = listBottom();
         int visibleH   = listBottom - listTop;
-        int maxScroll  = Math.max(0, totalVirtualH - visibleH);
+        int maxScroll  = ScoreboardListLayout.maxScroll(totalVirtualH, visibleH);
         if (maxScroll > 0) {
-            int barH   = Math.max(24, visibleH * visibleH / Math.max(1, totalVirtualH));
-            barH       = Math.min(barH, visibleH);
-            int trackH = visibleH - barH;
-            int barY   = listTop + (trackH > 0 ? trackH * scrollOffset / maxScroll : 0);
-            barY       = Math.min(barY, listBottom - barH);
-            int barX   = x + width - SCROLLBAR_W - 2;
+            int barX = x + width - SCROLLBAR_W - 2;
             // スクロールバー上でクリックされたらドラッグ開始
             if (mx >= barX && mx <= barX + SCROLLBAR_W && my >= listTop && my <= listBottom) {
                 draggingScrollbar = true;
@@ -660,27 +732,16 @@ public final class ScoreboardTab {
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
         if (!draggingScrollbar) return false;
         // 仮想高さを再計算してスクロール量を算出する
-        List<PlayerListEntry> visibleEntries = entries.stream().filter(e -> !e.isBlocked()).collect(Collectors.toList());
-        List<PlayerListEntry> blockedEntries = entries.stream().filter(PlayerListEntry::isBlocked).collect(Collectors.toList());
-        int totalVirtualH = 0;
-        if (!visibleEntries.isEmpty()) totalVirtualH += CATEGORY_H + visibleEntries.size() * ROW_HEIGHT;
-        if (!blockedEntries.isEmpty()) totalVirtualH += CATEGORY_H + blockedEntries.size() * ROW_HEIGHT;
+        int totalVirtualH = currentTotalVirtualHeight();
 
-        // 一括操作ボタン行(20px)分オフセット
-        int listTop    = y + SUBTAB_H + ROW_HEIGHT + 20 + 4;
-        int listBottom = y + height - 4;
-        int visibleH   = listBottom - listTop;
-        int maxScroll  = Math.max(0, totalVirtualH - visibleH);
+        int visibleH  = listBottom() - listTop();
+        int maxScroll = ScoreboardListLayout.maxScroll(totalVirtualH, visibleH);
         if (maxScroll > 0) {
-            int barH   = Math.max(24, visibleH * visibleH / Math.max(1, totalVirtualH));
-            barH       = Math.min(barH, visibleH);
-            int trackH = visibleH - barH;
-            if (trackH > 0) {
-                // マウス移動量をスクロール量に変換して適用する
-                scrollOffset = Math.max(0, Math.min(
-                        dragStartScroll + (int)((my - dragStartMouseY) * maxScroll / trackH),
-                        maxScroll));
-            }
+            int barH   = ScoreboardListLayout.scrollbarHeight(visibleH, totalVirtualH);
+            int trackH = ScoreboardListLayout.trackHeight(visibleH, barH);
+            // マウス移動量をスクロール量に変換して適用する
+            scrollOffset = ScoreboardListLayout.scrollFromDrag(
+                    dragStartScroll, my - dragStartMouseY, maxScroll, trackH);
         }
         return true;
     }
@@ -689,27 +750,28 @@ public final class ScoreboardTab {
     public boolean mouseScrolled(double mx, double my, double amount) {
         // プレイヤータブ以外はスクロール不要
         if (activeSubTab != SubTab.PLAYERS) return false;
-        // 一括操作ボタン行(20px)分オフセット
-        int listTop    = y + SUBTAB_H + ROW_HEIGHT + 20 + 4;
-        int listBottom = y + height - 4;
+        int listTop    = listTop();
+        int listBottom = listBottom();
         // リスト領域外のスクロールは無視する
         if (my < listTop || my > listBottom) return false;
-        List<PlayerListEntry> visibleEntries = entries.stream().filter(e -> !e.isBlocked()).collect(Collectors.toList());
-        List<PlayerListEntry> blockedEntries = entries.stream().filter(PlayerListEntry::isBlocked).collect(Collectors.toList());
-        int totalVirtualH = 0;
-        if (!visibleEntries.isEmpty()) totalVirtualH += CATEGORY_H + visibleEntries.size() * ROW_HEIGHT;
-        if (!blockedEntries.isEmpty()) totalVirtualH += CATEGORY_H + blockedEntries.size() * ROW_HEIGHT;
-        int visibleH  = listBottom - listTop;
-        int maxScroll = Math.max(0, totalVirtualH - visibleH);
+        int totalVirtualH = currentTotalVirtualHeight();
+        int maxScroll = ScoreboardListLayout.maxScroll(totalVirtualH, listBottom - listTop);
         // ホイール量に SCROLL_SPEED を掛けてスクロール量を決定する
-        scrollOffset  = Math.max(0, Math.min((int)(scrollOffset - amount * SCROLL_SPEED), maxScroll));
+        scrollOffset  = ScoreboardListLayout.scrollFromWheel(scrollOffset, amount, SCROLL_SPEED, maxScroll);
         return true;
     }
 
     // ───── ヘルパー ─────
 
+    // 現在のエントリ構成からリスト全体の仮想高さを求める
+    private int currentTotalVirtualHeight() {
+        int visibleCount = (int) entries.stream().filter(e -> !e.isBlocked()).count();
+        int blockedCount = entries.size() - visibleCount;
+        return ScoreboardListLayout.totalVirtualHeight(visibleCount, blockedCount, CATEGORY_H, ROW_HEIGHT);
+    }
+
     // サーバーへプレイヤーリストのリクエストを送る
-    private void requestList() { waiting = true; ScoreboardPacketClient.requestPlayerList(); }
+    private void requestList() { setWaiting(true); ScoreboardPacketClient.requestPlayerList(); }
 
     // 文字列を最大文字数に切り詰めるヘルパー
     private static String truncate(String s, int max) {
@@ -723,11 +785,20 @@ public final class ScoreboardTab {
 
     // ───── ISliderCallback 実装（スケール 0.5–3.0） ─────
 
-    // スケールスライダーのコールバック実装
+    // スケールスライダーのコールバック実装。
+    //
+    // ★ NOTE: ClientConfig のインスタンスを **保持してはならない**。
+    //   ClientConfigManager.load() は config フィールドを別インスタンスへ差し替えるが、
+    //   malilib はワールド／サーバーへ入るたびに ConfigManager.loadAllConfigs() を呼び、
+    //   登録済み IConfigHandler.load() を再実行する
+    //   （WorldLoadHandler.onWorldLoadPost。malilib 0.11.8〜0.27.x のすべてで同じ）。
+    //   init() 時点の参照を掴むと、その瞬間からスライダーだけが
+    //   孤児インスタンスを読み書きし続け、つまみが動かず設定も保存されなくなる。
+    //   毎回 ClientConfigManager.config を読み直すこと。
     private static class ScaleCallback implements ISliderCallback {
-        private final ClientConfig cfg;
 
-        ScaleCallback(ClientConfig cfg) { this.cfg = cfg; }
+        // 常に最新の設定インスタンスを返す
+        private static ClientConfig cfg() { return ClientConfigManager.config; }
 
         // スライダーのステップ数（50 段階）
         @Override public int getMaxSteps() { return 50; }
@@ -735,7 +806,7 @@ public final class ScoreboardTab {
         // 現在値を 0–1 の相対値に変換して返す
         @Override
         public double getValueRelative() {
-            return (cfg.scoreboardScale - 0.5f) / 2.5f;
+            return (cfg().scoreboardScale - 0.5f) / 2.5f;
         }
 
         // 0–1 の相対値をスケール値（0.5–3.0）に変換して設定する
@@ -743,16 +814,19 @@ public final class ScoreboardTab {
         public void setValueRelative(double rel) {
             float v = (float)(Math.round(rel * 50) * 0.05 + 0.5);
             v = Math.max(0.5f, Math.min(3.0f, v));
+            ClientConfig cfg = cfg();
             if (Math.abs(cfg.scoreboardScale - v) > 0.001f) {
                 cfg.scoreboardScale = v;
-                ClientConfigManager.save();
+                // ドラッグ中は 0.05 刻みで毎ステップ呼ばれる。
+                // 毎回フルライトするとレンダースレッド上で数十回の同期書き込みになるため間引く
+                ClientConfigManager.saveDeferred();
             }
         }
 
         // スライダーに表示する書式化済み文字列を返す
         @Override
         public String getFormattedDisplayValue() {
-            return String.format("%.2fx", cfg.scoreboardScale);
+            return String.format("%.2fx", cfg().scoreboardScale);
         }
     }
 
@@ -782,6 +856,29 @@ public final class ScoreboardTab {
         }
     }
 
+    // ───── 内部クラス：プールで使い回す行ボタン ─────
+
+    // 担当プレイヤーを差し替えられる行ボタン。
+    //
+    // host（malilib の GuiBase）へ渡したボタンは取り除けないので、
+    // リスト更新のたびに new せず、この UUID の付け替えで対象を切り替える。
+    // リスナーはボタン 1 個につき 1 回だけ登録し、押されたときに
+    // その時点の uuid を読む（未割り当ての null なら何もしない）。
+    private static class RowButton extends HideableButton {
+        // 現在この行が担当しているプレイヤーの UUID（未割り当ては null）
+        private String uuid;
+
+        RowButton(int x, int y, int width, int height, String text) {
+            super(x, y, width, height, text);
+        }
+
+        // 担当プレイヤーを設定する（null で未割り当てに戻す）
+        void bind(String uuid) { this.uuid = uuid; }
+
+        // 現在の担当プレイヤーの UUID を返す
+        String uuid() { return this.uuid; }
+    }
+
     // ───── 内部クラス：表示切り替え可能な WidgetSlider ─────
 
     // 表示/非表示を切り替えられる WidgetSlider の拡張クラス
@@ -802,11 +899,12 @@ public final class ScoreboardTab {
 
     // ───── ISliderCallback 実装（ページサイズ 1–50） ─────
 
-    // ページサイズスライダーのコールバック実装
+    // ページサイズスライダーのコールバック実装。
+    // ClientConfig を保持しない理由は ScaleCallback の NOTE を参照。
     private static class PageSizeCallback implements ISliderCallback {
-        private final ClientConfig cfg;
 
-        PageSizeCallback(ClientConfig cfg) { this.cfg = cfg; }
+        // 常に最新の設定インスタンスを返す
+        private static ClientConfig cfg() { return ClientConfigManager.config; }
 
         // スライダーのステップ数（49 段階 → 1〜50）
         @Override public int getMaxSteps() { return 49; }
@@ -814,16 +912,18 @@ public final class ScoreboardTab {
         // 現在値を 0–1 の相対値に変換して返す
         @Override
         public double getValueRelative() {
-            return (cfg.scoreboardPageSize - 1) / 49.0;
+            return (cfg().scoreboardPageSize - 1) / 49.0;
         }
 
         // 0–1 の相対値をページサイズ（1–50）に変換して設定する
         @Override
         public void setValueRelative(double rel) {
             int v = Math.max(1, Math.min(50, (int) Math.round(rel * 49) + 1));
+            ClientConfig cfg = cfg();
             if (cfg.scoreboardPageSize != v) {
                 cfg.scoreboardPageSize = v;
-                ClientConfigManager.save();
+                // ドラッグ中は 1 ステップごとに呼ばれるのでフルライトを間引く
+                ClientConfigManager.saveDeferred();
                 // ページサイズ変更時は先頭ページへ戻す
                 ScoreboardHudRenderer.resetPage();
             }
@@ -833,7 +933,7 @@ public final class ScoreboardTab {
         // NOTE: 書式引数は I18n.translate() に直接渡す（String.format で包むと "Format error: " が付く）
         @Override
         public String getFormattedDisplayValue() {
-            return I18n.translate("hikaritweaks.scoreboard_tab.page_size_value", cfg.scoreboardPageSize);
+            return I18n.translate("hikaritweaks.scoreboard_tab.page_size_value", cfg().scoreboardPageSize);
         }
     }
 }
