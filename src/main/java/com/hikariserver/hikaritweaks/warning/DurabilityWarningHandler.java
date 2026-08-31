@@ -1,5 +1,6 @@
 package com.hikariserver.hikaritweaks.warning;
 
+import com.hikariserver.hikaritweaks.compat.RegistryCompat;
 import com.hikariserver.hikaritweaks.compat.SoundCompat;
 import com.hikariserver.hikaritweaks.compat.TextCompat;
 import com.hikariserver.hikaritweaks.config.TweaksOptions;
@@ -8,16 +9,16 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundCategory;
 
-import java.util.HashMap;
-import java.util.Map;
-
 // 耐久値 1% 警告ハンドラ。
 // Mixin を使わず ClientTickEvents から呼ぶことで refMap 問題を回避。
-// スロット+署名ごとに1回だけ警告を出す。
+//
+// 警告は「アイテムが警告状態（残り耐久 <= 1%）に**入った瞬間**」に 1 回だけ出し、
+// 「警告状態から**出た**とき」だけ再武装する。判定そのものは MC 非依存の
+// DurabilityWarningState が持っている（ユニットテスト付き）。
 public final class DurabilityWarningHandler {
 
-    // 警告済みスロットの追跡マップ（スロット番号 → "アイテムID|ダメージ値" の署名）
-    private static final Map<Integer, String> warnedSignatures = new HashMap<>();
+    // 「1 回だけ」を担保する状態機械
+    private static final DurabilityWarningState STATE = new DurabilityWarningState();
 
     // インスタンス化を禁止するプライベートコンストラクタ
     private DurabilityWarningHandler() {}
@@ -26,41 +27,39 @@ public final class DurabilityWarningHandler {
     public static void tick(MinecraftClient mc) {
         // 機能が無効な場合は警告記録をクリアして早期リターンする
         if (!TweaksOptions.DURABILITY_WARNING_ENABLED.getBooleanValue()) {
-            warnedSignatures.clear();
+            STATE.clear();
             return;
         }
         ClientPlayerEntity player = mc.player;
         // プレイヤーまたはワールドが存在しない場合は早期リターンする
         if (player == null || mc.world == null) return;
 
+        STATE.beginTick();
+
         // インベントリの全スロットを走査して耐久値を確認する
         for (int slot = 0; slot < player.getInventory().size(); slot++) {
             ItemStack stack = player.getInventory().getStack(slot);
 
-            // 空スロットまたは耐久なしアイテムは警告不要なので記録を削除する
-            if (stack.isEmpty() || !stack.isDamageable()) {
-                warnedSignatures.remove(slot);
-                continue;
-            }
+            // 空スロットまたは耐久なしアイテムは警告対象外
+            if (stack.isEmpty() || !stack.isDamageable()) continue;
 
             int maxDamage = stack.getMaxDamage();
-            int remaining  = maxDamage - stack.getDamage();
-            // 1% 以下になる閾値を計算する（最小 1）
-            int threshold  = Math.max(1, (int) Math.ceil(maxDamage * 0.01));
+            int remaining = maxDamage - stack.getDamage();
 
-            // 閾値より多い耐久が残っている場合は警告不要なので記録を削除する
-            if (remaining > threshold) {
-                warnedSignatures.remove(slot);
-                continue;
-            }
+            // 警告状態でなければ何もしない。
+            // このアイテムのキーは今 tick の「見えたキー」に入らないので、
+            // 直後の endTick() で再武装される（＝修理されたら次にまた警告が出る）。
+            if (!DurabilityWarningState.inWarningState(maxDamage, stack.getDamage())) continue;
 
-            // 同じアイテム・同じダメージ値の警告は重複して出さない
-            String sig = stack.getItem().toString() + "|" + stack.getDamage();
-            if (sig.equals(warnedSignatures.get(slot))) continue;
+            // すでに警告済みなら出さない。
+            // ★ キーにダメージ値を入れてはいけない。1 ダメージごとに別のキーになり、
+            //   最後の 1% を削り切るあいだ毎回警告が出る（v1.1.x の不具合）。
+            //   修繕でダメージが**減る**ときも通っていない値が次々できるので、
+            //   経験値を拾うたびに警告とサウンドが重なって鳴っていた。
+            if (!STATE.offer(identity(stack))) continue;
 
-            // 警告記録を更新して警告メッセージとサウンドを出す
-            warnedSignatures.put(slot, sig);
-            int percent = Math.max(0, (int) Math.ceil((remaining * 100.0) / maxDamage));
+            // 警告メッセージとサウンドを出す
+            int percent = DurabilityWarningState.remainingPercent(remaining, maxDamage);
             player.sendMessage(
                     TextCompat.literal(
                             "§c[HikariTweaks]§f 耐久値警告: §e"
@@ -81,5 +80,26 @@ public final class DurabilityWarningHandler {
                     1.2F
             );
         }
+
+        // 今 tick に警告状態で現れなかったキーを再武装する
+        STATE.endTick();
+    }
+
+    // 「同じアイテム」を表すキー。
+    //
+    // ★ スロット番号を入れてはいけない。以前はスロットごとに記録していたため、
+    //   ほぼ壊れた道具をホットバー内で持ち替えたり並べ替えたりするだけで
+    //   移動先のスロットには記録が無く、そのたびに警告が出ていた。
+    // ★ ダメージ値も入れてはいけない（上の説明のとおり）。
+    //
+    // 採ったのは「登録 ID + 表示名」。持ち替え・並べ替えでは変わらず、
+    // 耐久値の増減でも変わらない。名前を付けた道具は別物として扱える。
+    //
+    // 割り切り: 名前を付けていない同種の道具（無名のダイヤのつるはし 2 本）が
+    // 同時に警告状態へ入ったときは 1 回しか警告しない。バニラのアイテムには
+    // 個体を識別する ID が無く、全 17 ターゲットで安定して読める代替も無い。
+    // 「持ち替えで鳴り直す」「1 ダメージごとに鳴る」ほうが実害が大きいと判断した。
+    private static String identity(ItemStack stack) {
+        return RegistryCompat.itemId(stack.getItem()) + "|" + stack.getName().getString();
     }
 }

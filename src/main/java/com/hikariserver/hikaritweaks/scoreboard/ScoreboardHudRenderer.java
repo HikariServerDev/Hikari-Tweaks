@@ -212,7 +212,12 @@ public final class ScoreboardHudRenderer {
         int boxW     = maxEntryW + 6;   // 左右3pxずつパディング
         int boxH     = (visible + 1) * lineH + 2; // +1 = タイトル行, +2 = 上下1px
         if (maxPage > 0) boxH += lineH; // ページ行
-        if (cfg.scoreboardShowServerTotal) boxH += lineH; // サーバートータル行
+        // ★ 高さの条件は下の描画と**同じ showTotal** を使うこと。
+        //   cfg.scoreboardShowServerTotal だけで数えると、§3.5 のセンチネル
+        //   （serverTotal < 0 = Total 行を出すな。RankingTable の初期値でもある）のときに
+        //   行は描かれないのに高さだけ 9px 多く数えてしまう。
+        //   yStart = lAnchorY - boxH / 2 なので、盤面ごとアンカーより 4〜5px 上へずれる。
+        if (showTotal) boxH += lineH; // サーバートータル行
 
         // ── アンカー座標（スケール後ピクセル）─────────────────
         int anchorX = (int)(scaledW * cfg.scoreboardPositionX / 100.0);

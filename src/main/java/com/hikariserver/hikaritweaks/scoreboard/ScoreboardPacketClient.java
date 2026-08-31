@@ -2,15 +2,22 @@ package com.hikariserver.hikaritweaks.scoreboard;
 
 import com.hikariserver.hikaritweaks.compat.IdCompat;
 import com.hikariserver.hikaritweaks.compat.NetCompat;
+import com.hikariserver.hikaritweaks.scoreboard.v1.RankingV1Data;
+import com.hikariserver.hikaritweaks.scoreboard.v1.ScoreboardV1Codec;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 // Client-side packet utility for HikariScoreBoard integration.
 public final class ScoreboardPacketClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger("Hikari-Tweaks/scoreboard");
 
     // パケット識別子の定義
     private static final Identifier RANKING_DATA         = IdCompat.of("hikariscoreboard", "ranking_data");
@@ -21,10 +28,14 @@ public final class ScoreboardPacketClient {
     // HikariScoreBoard v1.4.3 以降、サーバーは Tweaks 検知時にバニラ Objective を
     // 送らなくなったため、クライアント側で隠す必要が無くなった。
 
+    // 壊れたパケットのログを絞る間隔（ナノ秒）。
+    // 壊れたサーバーが毎 tick 送ってくるとログが埋まるため（v2 側と同じ扱い）。
+    private static final long MALFORMED_LOG_INTERVAL_NANOS = 5_000_000_000L;
+
     // サーバーから受信したプレイヤーリストのキャッシュ
     private static List<PlayerListEntry> cachedList = new ArrayList<>();
     // 最後に受信したランキングデータのキャッシュ（volatile でスレッド安全に保つ）
-    private static volatile RankingData cachedRanking = null;
+    private static volatile RankingV1Data cachedRanking = null;
     // サーバーから hide 指示を受けた状態。true の間はデータが届いても HUD を表示しない
     private static volatile boolean serverHidden = false;
     // プレイヤーリスト更新時に呼ぶコールバック
@@ -32,17 +43,36 @@ public final class ScoreboardPacketClient {
     // ランキング更新時に呼ぶコールバック
     private static Runnable onRankingUpdated = null;
 
+    // 最後に壊れたパケットを記録した時刻（ナノ秒）
+    private static long lastMalformedLogNanos = Long.MIN_VALUE;
+
     // インスタンス化を禁止するプライベートコンストラクタ
     private ScoreboardPacketClient() {}
 
-    // サーバーからのパケットを受信するハンドラをグローバルに登録する
+    // サーバーからのパケットを受信するハンドラをグローバルに登録する。
+    //
+    // ┌─ 受信コールバックから例外を出してはいけない理由 ─────────────────┐
+    // │ ここに登録するラムダを呼ぶのは Fabric のネットワーキング API で、    │
+    // │ 呼び出し元のスタックがこのファイルからは見えない。実際の実行先は     │
+    // │   MC 1.20.5 未満 … legacy ハンドラは **netty のイベントループ上**    │
+    // │     で走る。抜けた例外は netty の exceptionCaught に落ち、           │
+    // │     ClientConnection がそれを致命的として扱うのでサーバー切断になる。 │
+    // │   MC 1.20.5 以降 … ハンドラはクライアントスレッドで走るので、        │
+    // │     抜けた例外はそのままクラッシュレポートになる。                    │
+    // │ どちらも「壊れたパケット 1 通でセッションが終わる」ことに変わりはない。│
+    // │ したがってパースは必ず try/catch で囲み、読めなければパケットを       │
+    // │ 捨てるだけにすること（v2 = RankingV2Client と同じ扱い）。            │
+    // └──────────────────────────────────────────────────────────────────┘
     public static void register() {
         // ランキングデータパケットを受信してキャッシュに保存する
         NetCompat.registerReceiver(RANKING_DATA,
                 (client, buf) -> {
+                    RankingV1Data data = decode(buf, ScoreboardV1Codec::decodeRanking, "ranking_data");
+                    // 壊れていたらこのパケットは捨てる（キャッシュは前回の値のまま）
+                    if (data == null) return;
+
                     // 非表示フラグが立っている場合はランキングをクリアして早期リターン
-                    boolean isHidden = buf.readBoolean();
-                    if (isHidden) {
+                    if (data.hidden()) {
                         client.execute(() -> {
                             serverHidden = true;
                             cachedRanking = null;
@@ -50,38 +80,7 @@ public final class ScoreboardPacketClient {
                         return;
                     }
 
-                    // タイトルとランキングエントリを読み込む
-                    String title = buf.readString(256);
-                    int count = buf.readVarInt();
-                    List<RankingEntry> top = new ArrayList<>(count);
-                    for (int i = 0; i < count; i++) {
-                        String name = buf.readString(64);
-                        long value = buf.readLong();
-                        top.add(new RankingEntry(name, value));
-                    }
-
-                    // サーバー合計・自分のランク・スコア・名前を読み込む
-                    long serverTotal = buf.readLong();
-                    int selfRank = buf.readVarInt();
-                    long selfValue = buf.readLong();
-                    String selfName = buf.readString(64);
-
-                    // フルリストが含まれている場合は読み込む（なければ top を使う）
-                    List<RankingEntry> full;
-                    if (buf.isReadable()) {
-                        int fullCount = buf.readVarInt();
-                        full = new ArrayList<>(fullCount);
-                        for (int i = 0; i < fullCount; i++) {
-                            String name = buf.readString(64);
-                            long val = buf.readLong();
-                            full.add(new RankingEntry(name, val));
-                        }
-                    } else {
-                        full = top;
-                    }
-
                     // MC スレッドでキャッシュを更新してコールバックを呼ぶ
-                    RankingData data = new RankingData(title, top, full, serverTotal, selfRank, selfValue, selfName);
                     client.execute(() -> {
                         serverHidden = false;
                         cachedRanking = data;
@@ -94,15 +93,11 @@ public final class ScoreboardPacketClient {
         // プレイヤーリストレスポンスを受信してキャッシュに保存する
         NetCompat.registerReceiver(PLAYER_LIST_RESPONSE,
                 (client, buf) -> {
-                    int count = buf.readVarInt();
-                    List<PlayerListEntry> list = new ArrayList<>(count);
-                    for (int i = 0; i < count; i++) {
-                        String uuid = buf.readString(36);
-                        String displayName = buf.readString(64);
-                        boolean isBot = buf.readBoolean();
-                        boolean isBlocked = buf.readBoolean();
-                        list.add(new PlayerListEntry(uuid, displayName, isBot, isBlocked));
-                    }
+                    List<PlayerListEntry> list =
+                            decode(buf, ScoreboardV1Codec::decodePlayerList, "player_list_response");
+                    // 壊れていたらこのパケットは捨てる（キャッシュは前回の値のまま）
+                    if (list == null) return;
+
                     // MC スレッドでリストを更新してコールバックを呼ぶ
                     client.execute(() -> {
                         cachedList = list;
@@ -128,11 +123,40 @@ public final class ScoreboardPacketClient {
         NetCompat.registerSendChannel(BLOCK_TOGGLE);
     }
 
-    // サーバーへプレイヤーリストのリクエストパケットを送信する
-    public static void requestPlayerList() {
-        if (NetCompat.canSend(PLAYER_LIST_REQUEST)) {
-            NetCompat.send(PLAYER_LIST_REQUEST, NetCompat.createBuf());
+    // 受信バッファを byte[] に落として MC 非依存のコーデックへ渡す共通処理。
+    // 読めなければ null を返すので、呼び出し側はそのパケットを捨てること。
+    //
+    // buf はコールバックを抜けると無効になるのでここで読み切る。
+    private static <T> T decode(PacketByteBuf buf, Function<byte[], T> decoder, String channel) {
+        try {
+            byte[] payload = new byte[buf.readableBytes()];
+            buf.readBytes(payload);
+            return decoder.apply(payload);
+        } catch (Exception e) {
+            // 例外を外へ出さないこと（register() のコメント参照）。
+            logMalformed(channel, e);
+            return null;
         }
+    }
+
+    // 壊れたパケットのログ（間隔を空ける）
+    private static void logMalformed(String channel, Exception e) {
+        long now = System.nanoTime();
+        if (now - lastMalformedLogNanos < MALFORMED_LOG_INTERVAL_NANOS) return;
+        lastMalformedLogNanos = now;
+        LOGGER.warn("{}: dropped a malformed packet: {}", channel, e.toString());
+    }
+
+    // サーバーへプレイヤーリストのリクエストパケットを送信する。
+    //
+    // @return 実際に送信できたら true。サーバーがチャンネルを登録していない
+    //         （＝HikariScoreBoard が入っていない・バニラサーバー・シングルプレイ）
+    //         ときは何も送らずに false を返す。呼び出し側は false を
+    //         「応答は永久に来ない」と解釈してよい。
+    public static boolean requestPlayerList() {
+        if (!NetCompat.canSend(PLAYER_LIST_REQUEST)) return false;
+        NetCompat.send(PLAYER_LIST_REQUEST, NetCompat.createBuf());
+        return true;
     }
 
     // 指定したプレイヤーのブロック状態を必要なら変更する。
@@ -178,7 +202,7 @@ public final class ScoreboardPacketClient {
     }
 
     // キャッシュ済みランキングデータを返す（データなしの場合は null）
-    public static RankingData getCachedRanking() {
+    public static RankingV1Data getCachedRanking() {
         return cachedRanking;
     }
 
@@ -197,18 +221,4 @@ public final class ScoreboardPacketClient {
         serverHidden = false;
         cachedRanking = null;
     }
-
-    // ランキングの1エントリ（名前とスコア値）を表すレコード
-    public record RankingEntry(String name, long value) {}
-
-    // サーバーから受信したランキング全体データを表すレコード
-    public record RankingData(
-            String title,
-            List<RankingEntry> top,
-            List<RankingEntry> full,
-            long serverTotal,
-            int selfRank,
-            long selfValue,
-            String selfName
-    ) {}
 }

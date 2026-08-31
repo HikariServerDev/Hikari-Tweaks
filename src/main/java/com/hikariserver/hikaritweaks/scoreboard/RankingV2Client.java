@@ -22,8 +22,8 @@ import java.util.List;
 // │   （§1）。登録は必ず v1 と同じタイミングで行う。               │
 // │   ScoreboardPacketClient.register() から呼ばれること。         │
 // │ ・パースは例外を捕まえてパケットを捨てるだけにする（§5.3）。    │
-// │   v1 には try/catch が無く、不正パケットが netty スレッドで     │
-// │   例外 → クライアント切断になる不具合がある。v2 で繰り返さない。 │
+// │   v1（ScoreboardPacketClient）も同じ形で捕まえている。          │
+// │   外へ出すと netty スレッドで切断される。片方だけ直さないこと。 │
 // └────────────────────────────────────────────────────────────┘
 public final class RankingV2Client {
 

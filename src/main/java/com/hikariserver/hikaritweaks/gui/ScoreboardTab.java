@@ -59,10 +59,11 @@ public final class ScoreboardTab {
     private static final int CATEGORY_H  = 14;
     // プレイヤーリスト応答を待つ上限（ミリ秒）。
     //
-    // ScoreboardPacketClient.requestPlayerList() は、サーバーがチャンネルを
-    // 登録していない（＝HikariScoreBoard が入っていない）とき **何も送らずに返る**。
-    // 応答が来ないので waiting が下りず、バニラサーバーやシングルプレイでは
-    // 「Loading…」のまま永久に固まる。時間で諦めて no_data 表示へ落とす。
+    // 「そもそも送れなかった」ケース（サーバーがチャンネルを登録していない＝
+    // HikariScoreBoard が入っていない・バニラサーバー・シングルプレイ）は
+    // requestPlayerList() の戻り値で分かるので、待たずに no_data へ落とす。
+    // ここで面倒を見るのは「送れたのに応答が来ない」ケース
+    //（サーバーが応答しない・パケットが壊れて捨てられた）だけである。
     private static final long REQUEST_TIMEOUT_MS = 3000L;
 
     // ───── 状態 ─────
@@ -770,8 +771,14 @@ public final class ScoreboardTab {
         return ScoreboardListLayout.totalVirtualHeight(visibleCount, blockedCount, CATEGORY_H, ROW_HEIGHT);
     }
 
-    // サーバーへプレイヤーリストのリクエストを送る
-    private void requestList() { setWaiting(true); ScoreboardPacketClient.requestPlayerList(); }
+    // サーバーへプレイヤーリストのリクエストを送る。
+    //
+    // 送れなかった（サーバーがチャンネルを登録していない）ときは応答が永久に
+    // 来ないので、待機状態に入らずそのまま no_data 表示へ落とす。
+    // タイムアウトはあくまで「送れたのに応答が来ない」ときの保険。
+    private void requestList() {
+        setWaiting(ScoreboardPacketClient.requestPlayerList());
+    }
 
     // 文字列を最大文字数に切り詰めるヘルパー
     private static String truncate(String s, int max) {

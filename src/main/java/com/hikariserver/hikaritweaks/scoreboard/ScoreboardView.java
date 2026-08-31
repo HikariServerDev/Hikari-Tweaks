@@ -1,5 +1,7 @@
 package com.hikariserver.hikaritweaks.scoreboard;
 
+import com.hikariserver.hikaritweaks.scoreboard.v1.RankingV1Data;
+import com.hikariserver.hikaritweaks.scoreboard.v1.RankingV1Entry;
 import com.hikariserver.hikaritweaks.scoreboard.v2.RankingRow;
 import net.minecraft.client.MinecraftClient;
 
@@ -30,12 +32,12 @@ public final class ScoreboardView {
         private final UUID             selfId;
 
         // v1 経路。v2 のときは null。
-        private final List<ScoreboardPacketClient.RankingEntry> v1Rows;
+        private final List<RankingV1Entry> v1Rows;
         private final String                                    v1SelfName;
 
         private Data(String title, long serverTotal,
                      List<RankingRow> v2Rows, UUID selfId,
-                     List<ScoreboardPacketClient.RankingEntry> v1Rows, String v1SelfName) {
+                     List<RankingV1Entry> v1Rows, String v1SelfName) {
             this.title       = title;
             this.serverTotal = serverTotal;
             this.v2Rows      = v2Rows;
@@ -104,7 +106,7 @@ public final class ScoreboardView {
 
         // v1 経路（従来どおり。サーバーが並べた順をそのまま描く）
         if (ScoreboardPacketClient.isServerHidden()) return null;
-        ScoreboardPacketClient.RankingData data = ScoreboardPacketClient.getCachedRanking();
+        RankingV1Data data = ScoreboardPacketClient.getCachedRanking();
         if (data == null) return null;
         return new Data(
                 data.title(),
