@@ -9,7 +9,7 @@ public class ClientConfig {
 
     // ── バージョン管理 ─────────────────────────────────────
     // フィールド追加・削除のたびに +1 する
-    public int configVersion = 8;
+    public int configVersion = 7;
 
     // ── 補助機能 ───────────────────────────────────────────
     // MiniHUD フリーカメラ時のビーコン範囲修正の有効フラグとホットキー
@@ -78,9 +78,7 @@ public class ClientConfig {
     public int     scoreboardSelfColor      = 0xFFFFFF55;
     // サーバー全体の合計スコアを表示するフラグ
     public boolean scoreboardShowServerTotal = true;
-    // スコア変化を実時間で補間して滑らかに表示するフラグ（docs/ranking-v2-protocol.md 5.2）。
-    // 既定 ON。差分プロトコル（ranking_v2）で受け取った行にだけ効く。
-    public boolean scoreboardSmoothValues    = true;
+    // (スコア数値の補間は常時 ON になったため設定項目は無い。docs/ranking-v2-protocol.md 5.2)
     // (Update Checker 関連フィールドは廃止されました)
 
     // null ガードと数値の範囲チェックを行う。ロード後に必ず呼ぶこと。
@@ -154,12 +152,9 @@ public class ClientConfig {
             }
             configVersion = 7;
         }
-        // v7 -> v8: スコア数値の実時間補間を追加する。
-        // 既定 ON（サーバー側の ScoreSmoother 廃止ぶんをクライアントで肩代わりするため、
-        // OFF を既定にすると数値がカクつく体感に戻る）。
-        if (configVersion < 8) {
-            scoreboardSmoothValues = true;
-            configVersion = 8;
-        }
+        // v8 は scoreboardSmoothValues 追加のために本ブランチで一度用意したが、
+        // 補間を常時 ON にして設定項目ごと削除したため v7 に戻した。
+        // v8 はリリース済みバージョンに含まれていないので、
+        // 設定ファイルが v8 で書き出されたことは一度も無い（移行処理は不要）。
     }
 }

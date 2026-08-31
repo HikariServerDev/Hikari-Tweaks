@@ -6,7 +6,7 @@
   "config.name.fixbeaconrangefreecam": "MiniHUD ビーコン補正",
   "config.comment.fixbeaconrangefreecam": "MiniHUD フリーカメラ時のビーコン範囲をプレイヤー位置基準に修正します。",
   "config.name.durabilitywarningenabled": "耐久値警告",
-  "config.comment.durabilitywarningenabled": "耐久値が 1% 以下になったときにチャットへ警告を出します。",
+  "config.comment.durabilitywarningenabled": "耐久値が 1%% 以下になったときにチャットへ警告を出します。",
   "config.name.autorestockhotbar": "ホットバー自動補充",
   "config.comment.autorestockhotbar": "チェストなどのコンテナを開いた時、設定リストのアイテムをホットバーへ補充します。",
   "config.name.totemrestock": "トーテム補充",
@@ -82,6 +82,5 @@
   "hikaritweaks.scoreboard_tab.page_size_label": "ページサイズ:",
   "hikaritweaks.scoreboard_tab.scale_label": "スケール:",
   "hikaritweaks.scoreboard_tab.ranking_summary": "ランキング: %d人   ページ: %d/%d",
-  "hikaritweaks.scoreboard_tab.page_size_value": "ページサイズ: %d",
-  "hikaritweaks.scoreboard_tab.smooth_values": "数値を滑らかに"
+  "hikaritweaks.scoreboard_tab.page_size_value": "ページサイズ: %d"
 }

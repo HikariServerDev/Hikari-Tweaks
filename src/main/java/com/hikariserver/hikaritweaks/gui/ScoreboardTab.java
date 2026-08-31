@@ -107,7 +107,6 @@ public final class ScoreboardTab {
     private HideableButton posEditorBtn;
     private HideableButton colorPickerBtn;
     private HideableSlider scaleSlider;
-    private HideableButton smoothValuesBtn;
 
     // ───── コンストラクタ ─────
 
@@ -210,17 +209,8 @@ public final class ScoreboardTab {
                 new HideableSlider(lx + 60, dispRowY(3), 160, ROW_HEIGHT,
                         new ScaleCallback(cfg)));
 
-        // スコア数値の実時間補間トグル（docs/ranking-v2-protocol.md 5.2、既定 ON）
-        smoothValuesBtn = host.addButton(
-                new HideableButton(lx, dispRowY(4), 200, 18, smoothValuesLabel()),
-                (btn, mb) -> {
-                    ClientConfig c = ClientConfigManager.config;
-                    c.scoreboardSmoothValues = !c.scoreboardSmoothValues;
-                    ClientConfigManager.save();
-                    // ラベル更新は生成した HideableButton 側で行う
-                    // （リスナ引数の ButtonBase には setDisplayString が無い）
-                    if (smoothValuesBtn != null) smoothValuesBtn.setDisplayString(smoothValuesLabel());
-                });
+        // (スコア数値の補間トグルは廃止。補間は常時 ON。
+        //  docs/ranking-v2-protocol.md 5.2)
 
         // ── サーバーコールバック ──
         // プレイヤーリスト更新時にエントリを差し替えてボタンを再構築する
@@ -291,7 +281,6 @@ public final class ScoreboardTab {
         setShown(resetPageBtn,   display);
         setShown(posEditorBtn,   display);
         setShown(colorPickerBtn, display);
-        setShown(smoothValuesBtn, display);
     }
 
     // null チェック付きで HideableButton の表示を設定するヘルパー
@@ -402,8 +391,14 @@ public final class ScoreboardTab {
         ctx.drawTextWithShadow(tr, "§e" + I18n.translate("hikaritweaks.scoreboard_tab.name_header"), LIST_X + BUTTON_W + 30,   headerY + 22, 0xFFFFFF);
         ctx.drawTextWithShadow(tr, "§7" + I18n.translate("hikaritweaks.scoreboard_tab.type_header"), LIST_X + BUTTON_W + 156, headerY + 22, 0xFFFFFF);
         // 選択数表示
+        // NOTE: 書式引数は必ず I18n.translate() 自身に渡すこと。String.format(I18n.translate(key), args)
+        //   と外側で包んではならない。I18n.translate(String, Object...) は内部で String.format(値, args)
+        //   を実行し、IllegalFormatException を握り潰して "Format error: " + 値 を返す実装になっている。
+        //   引数なしで呼ぶと %d が埋まらず MissingFormatArgumentException が出て
+        //   "Format error: %d件選択中" が返り、外側の String.format がそこへ数値を埋めるため
+        //   画面には "Format error: 3件選択中" と表示されてしまう（v1.1.0 の実バグ）。
         if (!selectedUuids.isEmpty()) {
-            ctx.drawTextWithShadow(tr, "§e" + String.format(I18n.translate("hikaritweaks.scoreboard_tab.selected_count"), selectedUuids.size()),
+            ctx.drawTextWithShadow(tr, "§e" + I18n.translate("hikaritweaks.scoreboard_tab.selected_count", selectedUuids.size()),
                     x + width - BUTTON_W - 60, headerY + 4, 0xFFFFAA);
         }
 
@@ -449,7 +444,8 @@ public final class ScoreboardTab {
             // カテゴリヘッダーが表示領域内にあるときだけ描画する
             if (catY + CATEGORY_H >= listTop && catY <= listBottom) {
                 ctx.fill(x, catY, x + width, catY + CATEGORY_H, 0x44AAFFAA);
-                ctx.drawTextWithShadow(tr, "§a" + String.format(I18n.translate("hikaritweaks.scoreboard_tab.shown_group"), visibleEntries.size()), LIST_X + 2, catY + 3, 0xAAFFAA);
+                // NOTE: 書式引数は I18n.translate() に直接渡す（String.format で包むと "Format error: " が付く）
+                ctx.drawTextWithShadow(tr, "§a" + I18n.translate("hikaritweaks.scoreboard_tab.shown_group", visibleEntries.size()), LIST_X + 2, catY + 3, 0xAAFFAA);
             }
             drawY += CATEGORY_H;
 
@@ -492,7 +488,8 @@ public final class ScoreboardTab {
             int catY = drawY;
             if (catY + CATEGORY_H >= listTop && catY <= listBottom) {
                 ctx.fill(x, catY, x + width, catY + CATEGORY_H, 0x44FF8888);
-                ctx.drawTextWithShadow(tr, "§c" + String.format(I18n.translate("hikaritweaks.scoreboard_tab.hidden_group"), blockedEntries.size()), LIST_X + 2, catY + 3, 0xFFAAAA);
+                // NOTE: 書式引数は I18n.translate() に直接渡す（String.format で包むと "Format error: " が付く）
+                ctx.drawTextWithShadow(tr, "§c" + I18n.translate("hikaritweaks.scoreboard_tab.hidden_group", blockedEntries.size()), LIST_X + 2, catY + 3, 0xFFAAAA);
             }
             drawY += CATEGORY_H;
 
@@ -571,8 +568,10 @@ public final class ScoreboardTab {
         int total = data != null ? data.size() : 0;
         int page  = ScoreboardHudRenderer.getCurrentPage();
         int maxP  = ScoreboardHudRenderer.getMaxPage(total, cfg.scoreboardPageSize);
+        // NOTE: 書式引数は I18n.translate() に直接渡す（String.format で包むと "Format error: " が付く）
+        //   ranking_summary は %d を 3 つ持つので引数も 3 つ。lang 側と個数を必ず揃えること。
         ctx.drawTextWithShadow(tr,
-                String.format(I18n.translate("hikaritweaks.scoreboard_tab.ranking_summary"), total, page + 1, maxP + 1),
+                I18n.translate("hikaritweaks.scoreboard_tab.ranking_summary", total, page + 1, maxP + 1),
                 lx, infoY, 0xAAAAAA);
 
         // 区切り線を描画する
@@ -596,8 +595,7 @@ public final class ScoreboardTab {
             case 0 -> base;                                              // ページサイズ
             case 1 -> base + ROW_HEIGHT + 4 + 12;                       // ページ操作
             case 2 -> base + ROW_HEIGHT + 4 + 12 + 22 + 1 + 6;          // 位置/色
-            case 3 -> base + ROW_HEIGHT + 4 + 12 + 22 + 1 + 6 + 24;     // スケール
-            case 4 -> base + ROW_HEIGHT + 4 + 12 + 22 + 1 + 6 + 24 + 42; // 数値の補間トグル
+            case 3 -> base + ROW_HEIGHT + 4 + 12 + 22 + 1 + 6 + 24;     // スケール（最終行）
             default -> base;
         };
     }
@@ -712,15 +710,6 @@ public final class ScoreboardTab {
 
     // サーバーへプレイヤーリストのリクエストを送る
     private void requestList() { waiting = true; ScoreboardPacketClient.requestPlayerList(); }
-
-    // boolean を ON/OFF 文字列に変換するヘルパー
-    private static String onOff(boolean v) { return v ? "§aON" : "§cOFF"; }
-
-    // 数値補間トグルのラベルを組み立てる
-    private static String smoothValuesLabel() {
-        return I18n.translate("hikaritweaks.scoreboard_tab.smooth_values")
-                + ": " + onOff(ClientConfigManager.config.scoreboardSmoothValues);
-    }
 
     // 文字列を最大文字数に切り詰めるヘルパー
     private static String truncate(String s, int max) {
@@ -841,9 +830,10 @@ public final class ScoreboardTab {
         }
 
         // スライダーに表示する書式化済み文字列を返す
+        // NOTE: 書式引数は I18n.translate() に直接渡す（String.format で包むと "Format error: " が付く）
         @Override
         public String getFormattedDisplayValue() {
-            return String.format(I18n.translate("hikaritweaks.scoreboard_tab.page_size_value"), cfg.scoreboardPageSize);
+            return I18n.translate("hikaritweaks.scoreboard_tab.page_size_value", cfg.scoreboardPageSize);
         }
     }
 }

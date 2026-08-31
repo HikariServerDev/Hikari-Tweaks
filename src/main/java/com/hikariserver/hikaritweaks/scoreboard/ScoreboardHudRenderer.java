@@ -125,16 +125,24 @@ public final class ScoreboardHudRenderer {
             INTERPOLATOR.reset();
         }
 
-        long    nowNanos = System.nanoTime();
-        boolean smooth   = cfg.scoreboardSmoothValues;
+        long nowNanos = System.nanoTime();
+        // 補間は**常時 ON**。設定項目は無い（§5.2）。
+        // ON / OFF の見分けがつかない（跳び幅がほぼ常に +1 で、整数表示では
+        // N と N+1 の間に描ける中間値が無い）ため設定ごと削除した。
+        //
+        // ただし「常時 ON」＝「無条件」ではない。下の key != null と
+        // interpolatable() は残すこと。判定を消してはいけない理由は下に書く。
+        //
         // 並び順と順位は**実値**で決まっている（data は既にソート済み）。
         // 補間するのは表示される数字だけなので、補間中に行が入れ替わってちらつかない。
         long[] shownValues = new long[visible];
         for (int i = 0; i < visible; i++) {
             int  idx  = startIdx + i;
             long real = data.value(idx);
+            // v2 の行だけが補間キー（UUID）を持つ。v1 の行は UUID を持たないので
+            // interpolationKey() が null を返し、実値をそのまま描く。
             UUID key  = data.interpolationKey(idx);
-            shownValues[i] = (smooth && key != null)
+            shownValues[i] = (key != null)
                     ? INTERPOLATOR.display(key, real, nowNanos)
                     : real;
         }
@@ -145,13 +153,17 @@ public final class ScoreboardHudRenderer {
         // §3.5: serverTotal が負のときは Total 行自体を出さない。
         // そのフレームは補間器に触らないので endFrame() が状態を捨て、
         // 次に Total 行が現れたときは補間ではなく即座に実値になる
-        //（設定 OFF → ON、ページを開き直した直後も同じ）。
+        //（ページを開き直した直後も同じ）。
         //
-        // 補間するのは v2 経路のときだけ（行と同じ条件）。v1 は行を補間できないので、
-        // 合計だけ滑らかに動かすと直そうとしている問題の裏返しになる。
+        // ★ interpolatable() の判定を「常時 ON になったから」といって
+        //   消してはいけない。補間するのは v2 経路のときだけ（行と同じ条件）。
+        //   v1 は行が UUID を持たず補間できないので、ここを無条件にすると
+        //   補間されない行の上で合計だけが滑って動く。
+        //   それはこの判定を入れる原因になった不具合そのものであって、
+        //   直そうとしている問題の裏返しになる。
         boolean showTotal  = cfg.scoreboardShowServerTotal && data.serverTotal() >= 0;
         long    realTotal  = data.serverTotal();
-        long    shownTotal = (showTotal && smooth && data.interpolatable())
+        long    shownTotal = (showTotal && data.interpolatable())
                 ? INTERPOLATOR.displayTotal(realTotal, nowNanos)
                 : realTotal;
 
