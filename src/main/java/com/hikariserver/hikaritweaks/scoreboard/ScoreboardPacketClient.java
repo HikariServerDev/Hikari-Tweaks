@@ -115,6 +115,14 @@ public final class ScoreboardPacketClient {
         // 旧 VANILLA_SIDEBAR_CONTROL レシーバはここから削除。
         // HikariScoreBoard v1.4.3 以降は Tweaks 検知時にバニラ Objective を送らないため不要。
 
+        // 差分プロトコル hikariscoreboard:ranking_v2 の受信登録。
+        //
+        // ★ 上の RANKING_DATA（v1）と**同じタイミング**で登録すること。
+        //   サーバーは canSend(RANKING_V2) が true かどうかだけで v2 を選ぶので
+        //   （docs/ranking-v2-protocol.md §1）、登録が遅れると v1 で送られてしまう。
+        // ★ v1 の受信経路は消さないこと。サーバーが旧版のままの構成があり得る（§5.1）。
+        RankingV2Client.register();
+
         // 送信専用チャンネルを登録する（1.20.5 以降は事前登録が必須）
         NetCompat.registerSendChannel(PLAYER_LIST_REQUEST);
         NetCompat.registerSendChannel(BLOCK_TOGGLE);

@@ -82,5 +82,6 @@
   "hikaritweaks.scoreboard_tab.page_size_label": "ページサイズ:",
   "hikaritweaks.scoreboard_tab.scale_label": "スケール:",
   "hikaritweaks.scoreboard_tab.ranking_summary": "ランキング: %d人   ページ: %d/%d",
-  "hikaritweaks.scoreboard_tab.page_size_value": "ページサイズ: %d"
+  "hikaritweaks.scoreboard_tab.page_size_value": "ページサイズ: %d",
+  "hikaritweaks.scoreboard_tab.smooth_values": "数値を滑らかに"
 }

@@ -82,5 +82,6 @@
   "hikaritweaks.scoreboard_tab.page_size_label": "Page Size:",
   "hikaritweaks.scoreboard_tab.scale_label": "Scale:",
   "hikaritweaks.scoreboard_tab.ranking_summary": "Ranking: %d players   Page: %d/%d",
-  "hikaritweaks.scoreboard_tab.page_size_value": "Page Size: %d"
+  "hikaritweaks.scoreboard_tab.page_size_value": "Page Size: %d",
+  "hikaritweaks.scoreboard_tab.smooth_values": "Smooth Numbers"
 }

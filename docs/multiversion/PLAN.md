@@ -16,6 +16,19 @@
 - `chiseledBuild` で全ターゲットのビルドを一括実行でき、CI に載せやすい。
 - Fabric 系マルチバージョン Mod の事実上の標準。
 
+### プリプロセッサコメントの落とし穴（Stonecutter 0.9.7 実測）
+
+> ⚠️ **`//? if ...` の分岐の中身を `//` コメント行だけにしてはいけない。**
+> 非アクティブな分岐はソース上 `/* ... */` で囲まれており、その分岐がアクティブに
+> なるとき Stonecutter は行頭の `//` を剥がして復元する。
+> 分岐の中身がコメント行しか無いと**そのコメント自身の `//` まで剥がされ**、
+> 日本語のコメント本文がそのままコードとして残って**コンパイルが落ちる**。
+> 分岐には必ず実際の文を 1 つ以上含めること。
+> 「このバージョンでは何もしない」を表現したいなら、
+> コメントだけを置くのではなく空の実装や `return;` を書くか、
+> そもそもその分岐を作らずに条件を反転させる。
+> 実測でビルドを 1 回落として判明した（0.9.7）。
+
 ### ディレクトリ構成（移行後）
 
 ```
@@ -165,7 +178,7 @@ Loom が split 構成を拒否するため、クライアント専用コード�
 | Mixin | 差分（実測） |
 |---|---|
 | `MixinInGameHud.renderScoreboardSidebar` | 目的の対象は常に `(…, ScoreboardObjective)` 版。第1引数が `<1.20`: `MatrixStack` / `>=1.20`: `DrawContext` |
-| `MixinInGameHud.render` | `<1.20`: `(MatrixStack, float)` / `1.20〜1.20.6`: `(DrawContext, float)` / `>=1.21`: `(DrawContext, RenderTickCounter)` |
+| `MixinInGameHud.render` | `<1.20`: `(MatrixStack, float)` / `1.20〜1.20.6`: `(DrawContext, float)` / `>=1.21`: `(DrawContext, RenderTickCounter)`。`RenderTickCounter` はメソッド名が 1.21.5 で改名されている → §3.9 |
 | `MixinClientPlayNetworkHandler.onEntityStatus` | `packet.getEntity(world)` はほぼ不変。ステータス 35 も不変。低リスク |
 | `MixinOverlayRenderer` | MiniHUD 側の `renderOverlays` シグネチャ・`EntityUtils.getCameraEntity()` の記述子がバージョンで変わる。`@Redirect` の `target` に intermediary 名 (`Lnet/minecraft/class_1297;`) を直書きしているため、**MiniHUD のバージョンごとに確認必須**。最悪 `require = 0` で任意化する |
 
@@ -180,6 +193,36 @@ Loom が split 構成を拒否するため、クライアント専用コード�
 - **`splitEnvironmentSourceSets()`**: 全ターゲットで維持する（クライアント専用 Mod のため）。
 - **refmap**: Loom 1.17 は Mixin AP が既定オフのため `useLegacyMixinAp = true` を明示している。
   ソース構成を `src/main` 一本にしたため refmap 名は `hikari-tweaks.refmap.json`。
+
+### 3.9 `RenderTickCounter`（1.21.5 でメソッド名が改名）
+
+`InGameHud.render` の第 2 引数は 1.21 で `float` から `RenderTickCounter` に変わる（§3.7 の表）。
+**クラス名は 1.21 以降ずっと `net.minecraft.client.render.RenderTickCounter` のまま**だが、
+そのメソッド名が yarn の 1.21.5 で改名されている。intermediary 名は変わっていない。
+
+| intermediary | 〜1.21.4（yarn） | 1.21.5〜（yarn） |
+|---|---|---|
+| `method_60637` | `getTickDelta(boolean)` | `getTickProgress(boolean)` |
+| `method_60636` | `getLastFrameDuration()` | `getDynamicDeltaTicks()` |
+| `method_60638` | `getLastDuration()` | `getFixedDeltaTicks()` |
+
+- **実測で確認済み**。1.21 系の各ターゲットの yarn `mappings.tiny` を突き合わせた。
+  1.21.4 が改名前の最後のターゲットなので、この境界は 1.21.4 と 1.21.5 の両方を
+  ビルドしないと踏めない。**1.21.11 が通っても 1.21.4 が通る保証にはならない。**
+- **現状、この差分を踏んでいるコードは無い。** `MixinInGameHud.render` の `>=1.21` 分岐は
+  `@Inject` が対象メソッドの引数をそのまま要求するために `RenderTickCounter` を
+  受け取っているだけで、メソッドを 1 つも呼んでいない。
+  改名されたのは**メソッド名だけ**なので、型名を書く `@Inject` の記述子と引数宣言は
+  1.21〜1.21.11 で共通のまま通る。
+- かつて `compat/FrameTimeCompat` がこの差分を吸収していたが、
+  partial tick を使う機能そのものが無くなった（HUD 数値の補間の時計は
+  `System.nanoTime()`。理由は `docs/ranking-v2-protocol.md` §5.2）ため削除した。
+  **再び `RenderTickCounter` のメソッドを呼ぶ必要が出たら、必ず compat ファサードを
+  新設してそこへ閉じ込めること。** 素の名前で呼ぶコードは 1.21.4 と 1.21.5 の境界で必ず壊れる。
+- ★ ただしその前に、**取ろうとしている値が本当に必要か**を確認すること。
+  `RenderTickCounter` が返す partial tick は tick 内の位相であって経過時間ではなく、
+  tick レート変更・一時停止・サーバーラグで意味が変わる。
+  時間として使ってはいけない（`docs/ranking-v2-protocol.md` §5.2）。
 
 ---
 

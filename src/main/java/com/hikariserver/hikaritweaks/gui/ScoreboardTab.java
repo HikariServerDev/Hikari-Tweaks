@@ -7,6 +7,7 @@ import com.hikariserver.hikaritweaks.config.ClientConfigManager;
 import com.hikariserver.hikaritweaks.scoreboard.PlayerListEntry;
 import com.hikariserver.hikaritweaks.scoreboard.ScoreboardHudRenderer;
 import com.hikariserver.hikaritweaks.scoreboard.ScoreboardPacketClient;
+import com.hikariserver.hikaritweaks.scoreboard.ScoreboardView;
 import fi.dy.masa.malilib.gui.button.ButtonBase;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.gui.button.IButtonActionListener;
@@ -106,6 +107,7 @@ public final class ScoreboardTab {
     private HideableButton posEditorBtn;
     private HideableButton colorPickerBtn;
     private HideableSlider scaleSlider;
+    private HideableButton smoothValuesBtn;
 
     // ───── コンストラクタ ─────
 
@@ -208,6 +210,18 @@ public final class ScoreboardTab {
                 new HideableSlider(lx + 60, dispRowY(3), 160, ROW_HEIGHT,
                         new ScaleCallback(cfg)));
 
+        // スコア数値の実時間補間トグル（docs/ranking-v2-protocol.md 5.2、既定 ON）
+        smoothValuesBtn = host.addButton(
+                new HideableButton(lx, dispRowY(4), 200, 18, smoothValuesLabel()),
+                (btn, mb) -> {
+                    ClientConfig c = ClientConfigManager.config;
+                    c.scoreboardSmoothValues = !c.scoreboardSmoothValues;
+                    ClientConfigManager.save();
+                    // ラベル更新は生成した HideableButton 側で行う
+                    // （リスナ引数の ButtonBase には setDisplayString が無い）
+                    if (smoothValuesBtn != null) smoothValuesBtn.setDisplayString(smoothValuesLabel());
+                });
+
         // ── サーバーコールバック ──
         // プレイヤーリスト更新時にエントリを差し替えてボタンを再構築する
         ScoreboardPacketClient.setOnListUpdated(list -> {
@@ -277,6 +291,7 @@ public final class ScoreboardTab {
         setShown(resetPageBtn,   display);
         setShown(posEditorBtn,   display);
         setShown(colorPickerBtn, display);
+        setShown(smoothValuesBtn, display);
     }
 
     // null チェック付きで HideableButton の表示を設定するヘルパー
@@ -550,8 +565,10 @@ public final class ScoreboardTab {
 
         // ランキング情報行（合計人数とページ番号）を描画する
         int infoY = dispRowY(0) + ROW_HEIGHT + 4;
-        ScoreboardPacketClient.RankingData data = ScoreboardPacketClient.getCachedRanking();
-        int total = data != null ? data.full().size() : 0;
+        // v1 / v2 のどちらを描いているかは ScoreboardView が一元的に決める。
+        // ここで getCachedRanking()（v1 専用）を直に見ると v2 接続で常に 0 になる。
+        ScoreboardView.Data data = ScoreboardView.current();
+        int total = data != null ? data.size() : 0;
         int page  = ScoreboardHudRenderer.getCurrentPage();
         int maxP  = ScoreboardHudRenderer.getMaxPage(total, cfg.scoreboardPageSize);
         ctx.drawTextWithShadow(tr,
@@ -580,6 +597,7 @@ public final class ScoreboardTab {
             case 1 -> base + ROW_HEIGHT + 4 + 12;                       // ページ操作
             case 2 -> base + ROW_HEIGHT + 4 + 12 + 22 + 1 + 6;          // 位置/色
             case 3 -> base + ROW_HEIGHT + 4 + 12 + 22 + 1 + 6 + 24;     // スケール
+            case 4 -> base + ROW_HEIGHT + 4 + 12 + 22 + 1 + 6 + 24 + 42; // 数値の補間トグル
             default -> base;
         };
     }
@@ -695,8 +713,14 @@ public final class ScoreboardTab {
     // サーバーへプレイヤーリストのリクエストを送る
     private void requestList() { waiting = true; ScoreboardPacketClient.requestPlayerList(); }
 
-    // boolean を ON/OFF 文字列に変換するヘルパー（現在未使用だが将来のため残す）
+    // boolean を ON/OFF 文字列に変換するヘルパー
     private static String onOff(boolean v) { return v ? "§aON" : "§cOFF"; }
+
+    // 数値補間トグルのラベルを組み立てる
+    private static String smoothValuesLabel() {
+        return I18n.translate("hikaritweaks.scoreboard_tab.smooth_values")
+                + ": " + onOff(ClientConfigManager.config.scoreboardSmoothValues);
+    }
 
     // 文字列を最大文字数に切り詰めるヘルパー
     private static String truncate(String s, int max) {

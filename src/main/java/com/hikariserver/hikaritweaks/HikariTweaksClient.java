@@ -6,6 +6,7 @@ import com.hikariserver.hikaritweaks.hotkey.HikariTweaksHotkeyProvider;
 import com.hikariserver.hikaritweaks.restock.AutoRestockHotbarHandler;
 import com.hikariserver.hikaritweaks.restock.HandRestockHandler;
 import com.hikariserver.hikaritweaks.restock.TotemRestockHandler;
+import com.hikariserver.hikaritweaks.scoreboard.RankingV2Client;
 import com.hikariserver.hikaritweaks.scoreboard.ScoreboardHudRenderer;
 import com.hikariserver.hikaritweaks.scoreboard.ScoreboardPacketClient;
 import com.hikariserver.hikaritweaks.warning.DurabilityWarningHandler;
@@ -58,11 +59,21 @@ public class HikariTweaksClient implements ClientModInitializer {
             ScoreboardPacketClient.setOnListUpdated(null);
             ScoreboardPacketClient.setOnRankingUpdated(null);
             ScoreboardPacketClient.resetHiddenState();
+            // v2 のテーブルも捨てる。残すと次のサーバーで
+            // 「v2 経路」と誤判定したまま古いボードを描いてしまう。
+            //
+            // ★ client.execute で MC スレッドへ回すこと。
+            //   DISCONNECT は接続の切れ方によっては netty スレッドから飛んでくる。
+            //   RankingV2Client のテーブルは MC スレッド専有の HashMap なので、
+            //   直に clear すると描画中の反復と衝突しうる。
+            //   （実行されずに終わっても、次の JOIN で必ず reset される）
+            client.execute(RankingV2Client::reset);
         });
 
         // サーバー参加時の初期化とバージョン通知
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             ScoreboardPacketClient.resetHiddenState();
+            RankingV2Client.reset();
             ScoreboardHudRenderer.resetPage();
             // プレイヤーが存在するときのみバージョン通知メッセージを送信する
             if (client.player != null) {
