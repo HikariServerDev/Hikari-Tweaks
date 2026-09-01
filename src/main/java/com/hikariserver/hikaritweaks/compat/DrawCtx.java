@@ -18,7 +18,10 @@ import net.minecraft.client.util.math.MatrixStack;
 //   〜1.19.4 : MatrixStack + DrawableHelper の静的メソッド
 //   1.20〜   : DrawContext のインスタンスメソッド。行列は MatrixStack（3D）
 //   1.21.6〜 : DrawContext.getMatrices() が JOML の Matrix3x2fStack（2D）になり、
-//              push/pop が pushMatrix/popMatrix に、translate/scale が 2 引数になった
+//              push/pop が pushMatrix/popMatrix に、translate/scale が 2 引数になった。
+//              あわせて TextRenderer のアルファ補完（tweakTransparency）が消え、
+//              アルファ 0 のテキスト色は描画されずに捨てられるようになった
+//              → drawTextWithShadow で ColorCompat.opaqueIfNoAlpha() を通して吸収する
 public final class DrawCtx {
 
     //? if >=1.20 {
@@ -61,11 +64,20 @@ public final class DrawCtx {
     // 影付きテキストを描画する。
     // 1.20 以降は DrawContext が int 座標しか受け付けないため、
     // 小数座標は切り捨てられる点に注意。
+    //
+    // ★ ColorCompat.opaqueIfNoAlpha() を外してはならない。
+    //   1.21.6 の GUI レンダラ刷新で TextRenderer の tweakTransparency（アルファ補完）が
+    //   削除され、DrawContext#drawText がアルファ 0 の色で即 return するようになった。
+    //   0xFFFFFF のようなアルファ無しの色を渡している呼び出し元が全滅する
+    //   （1.21.11 実機で「文字だけ描かれない」不具合として発覚）。
+    //   1.21.5 以前ではバニラ側が同じ変換を掛け直すだけなので挙動は変わらない。
+    //   詳細な経緯は ColorCompat のコメントを参照。
     public void drawTextWithShadow(TextRenderer tr, String text, float x, float y, int color) {
+        int c = ColorCompat.opaqueIfNoAlpha(color);
         //? if >=1.20 {
-        /*ctx.drawTextWithShadow(tr, text, (int) x, (int) y, color);
+        /*ctx.drawTextWithShadow(tr, text, (int) x, (int) y, c);
         *///?} else {
-        tr.drawWithShadow(matrices, text, x, y, color);
+        tr.drawWithShadow(matrices, text, x, y, c);
         //?}
     }
 

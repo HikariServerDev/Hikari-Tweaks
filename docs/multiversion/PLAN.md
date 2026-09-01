@@ -137,6 +137,14 @@ Loom が split 構成を拒否するため、クライアント専用コード�
   - `push/translate/scale/pop` は `<1.20` は `MatrixStack`、`>=1.20` は `ctx.getMatrices()`
   - **1.21.6+ 注意**: `getMatrices()` が `Matrix3x2fStack`（2D）に変わり `translate(x,y,z)` / `scale(x,y,z)` が無い。
     1.21.9/1.21.10 の描画パイプライン刷新も含め、ここは個別に検証が必要。
+  - **1.21.6+ 注意（テキスト色のアルファ）**: 1.21.5 まで `TextRenderer#tweakTransparency`
+    （`(color & 0xFC000000) == 0` なら `| 0xFF000000`）が全描画の入口に居たため、
+    `0xFFFFFF` のようなアルファ無し 24bit 色でも描けていた。1.21.6 でこれが削除され、
+    `DrawContext#drawText` の先頭が `if (ColorHelper.getAlpha(color) == 0) return;` になったので
+    **アルファ 0 のテキストは何も描かれない**（`fill` と malilib のウィジェットは無関係なので
+    「矩形とボタンは出るのに文字だけ消える」という症状になる。1.21.11 実機で発覚）。
+    対応: `compat/ColorCompat.opaqueIfNoAlpha()` を `DrawCtx.drawTextWithShadow` で必ず通す。
+    バニラと同じ式かつ冪等なので 1.21.5 以前の挙動は変わらない。
   - `RenderSystem.enableScissor` (`ScoreboardTab:425,526`) は `>=1.20` では `ctx.enableScissor(...)` へ。
 
 ### 3.5 GUI ウィジェット
