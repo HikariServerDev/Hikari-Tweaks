@@ -97,7 +97,8 @@ public final class MaliLibConfigCompat {
     // ★ この再エスケープを消してはいけない。消すと耐久値警告のホバーコメントが
     //   全 17 ターゲット・en_us / ja_jp の両方で
     //   "Format error: Warns in chat when an item's durability drops to 1% or lower."
-    //   になる（v1.2.0 のバグ）。「余計な %% を掃除する」のは禁止。
+    //   になる（v1.1.0 で実際に出ていた不具合。修正は v1.2.0 から入っている）。
+    //   「余計な %% を掃除する」のは禁止。
     //
     // なぜ必要か:
     //   malilib は設定コメントを **2 回** String.format に通す。

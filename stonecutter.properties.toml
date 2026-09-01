@@ -18,7 +18,7 @@
 mod.id = "hikari-tweaks"
 mod.name = "Hikari-Tweaks"
 mod.group = "com.hikariserver"
-mod.version = "1.2.0"
+mod.version = "1.2.1"
 
 deps.fabric_loader = "0.17.3"
 deps.gson = "2.10.1"
