@@ -3,6 +3,7 @@ package com.hikariserver.hikaritweaks.lang;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.hikariserver.hikaritweaks.compat.MaliLibConfigCompat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -228,6 +229,110 @@ class LangFormatTest {
         }
         assertEquals("[]", problems.toString(),
                 "String.format が失敗する訳文がある。実機では \"Format error: ...\" と表示される。");
+    }
+
+    // ── malilib の二重書式化 ───────────────────────────────────────────────
+    //
+    // ★ 上の everyValueSurvivesStringFormat は String.format を **1 回** しか通さない。
+    //   ところが malilib の設定画面へ渡すコメントは **2 回** 書式化される。
+    //     1 回目: MaliLibConfigCompat.comment() の中の I18n.translate（lang の "%%" が "%" に戻る）
+    //     2 回目: malilib の WidgetConfigOption.addConfigComment() が
+    //             WidgetHoverInfo に渡し、WidgetHoverInfo.setInfoLines() が
+    //             受け取った「解決済みの文字列」をもう一度 StringUtils.translate に通す
+    //             （0.10.0-dev.26 〜 0.27.17 の全 17 バージョンで同じ。逆アセンブルで確認済み）
+    //   そのため lang を "%%" にしただけでは 2 回目で必ず壊れ、
+    //   画面には "Format error: ..." と出る（v1.2.0 のバグ。1 回パスのテストは緑のまま）。
+    //   MaLiLibConfigCompat.escapeForSecondFormatPass() が 1 回目の結果を再エスケープするので、
+    //   ここではその往復（1 回目 → 再エスケープ → 2 回目）を通しで検証する。
+    @Test
+    @DisplayName("設定コメントが malilib の二重 String.format を生き延びる")
+    void configCommentsSurviveMaliLibDoubleFormat() {
+        List<String> problems = new ArrayList<>();
+        for (String locale : LOCALES) {
+            for (Map.Entry<String, String> e : load(locale).entrySet()) {
+                String key = e.getKey();
+                // malilib を経由しないキー（自前で描画する分）は 1 回しか書式化されない
+                if (!key.startsWith("config.comment.") && !key.startsWith("config.name.")) {
+                    continue;
+                }
+                String once;
+                try {
+                    once = String.format(e.getValue());
+                } catch (IllegalFormatException ex) {
+                    continue; // 1 回目で壊れるものは everyValueSurvivesStringFormat の担当
+                }
+                // 本番と同じ再エスケープを通す（ここを素通しにすると必ず落ちる）
+                String handedToMaliLib = MaliLibConfigCompat.escapeForSecondFormatPass(once);
+                String shown;
+                try {
+                    shown = String.format(handedToMaliLib);
+                } catch (IllegalFormatException ex) {
+                    problems.add(locale + "/" + key + ": 2 回目の String.format が "
+                            + ex.getClass().getSimpleName() + "  → \"" + once + "\"");
+                    continue;
+                }
+                if (!shown.equals(once)) {
+                    problems.add(locale + "/" + key + ": 2 回目で内容が変わる  \""
+                            + once + "\" → \"" + shown + "\"");
+                }
+            }
+        }
+        assertEquals("[]", problems.toString(),
+                "malilib は設定コメントを 2 回 String.format する。"
+                        + "リテラルの % を含む訳文は MaliLibConfigCompat.escapeForSecondFormatPass() が"
+                        + "再エスケープしないと実機で \"Format error: ...\" と表示される。");
+    }
+
+    // 再エスケープの関数があるだけでは意味が無く、設定オプションの 3 クラスすべてが
+    // getComment() を上書きして本当にその関数を通していなければ実機では直らない。
+    // getComment() を実際に呼ぶには MC の Language 初期化が要る（＝ MC 起動が要る）ため、
+    // ここでは「3 クラスが getComment() を自分で宣言していること」だけを見る。
+    // 上書きを消す／メソッド名を変えるリファクタはこのテストで止まる。
+    @Test
+    @DisplayName("設定オプション 3 クラスが getComment() を上書きしている")
+    void everyConfigSubclassOverridesGetComment() {
+        List<String> problems = new ArrayList<>();
+        for (Class<?> c : new Class<?>[] {
+                MaliLibConfigCompat.BooleanHotkeyed.class,
+                MaliLibConfigCompat.Hotkey.class,
+                MaliLibConfigCompat.StringList.class }) {
+            try {
+                c.getDeclaredMethod("getComment");
+            } catch (NoSuchMethodException ex) {
+                problems.add(c.getSimpleName()
+                        + " が getComment() を上書きしていない（malilib の実装が使われ、"
+                        + "再エスケープが効かなくなる）");
+            }
+        }
+        assertEquals("[]", problems.toString(),
+                "MaliLibConfigCompat のサブクラスは getComment() を上書きして"
+                        + "escapeForSecondFormatPass() を通す必要がある。");
+    }
+
+    // 再エスケープそのものの往復。実際の訳文とは独立に、
+    // 「% を含む文字列が 2 回目の String.format を生き延びて元に戻る」ことを直接押さえる。
+    @Test
+    @DisplayName("escapeForSecondFormatPass が 2 回目の String.format を往復する")
+    void escapeSurvivesTheSecondFormatPass() {
+        String[] samples = {
+                "Warns in chat when an item's durability drops to 1% or lower.",
+                "耐久値が 1% 以下になったときにチャットへ警告を出します。",
+                "100%",
+                "% ",
+                "%%",
+                "no percent at all",
+        };
+        for (String s : samples) {
+            String escaped = MaliLibConfigCompat.escapeForSecondFormatPass(s);
+            String shown;
+            try {
+                shown = String.format(escaped);
+            } catch (IllegalFormatException ex) {
+                shown = "Format error: " + escaped;
+            }
+            assertEquals(s, shown,
+                    "2 回目の String.format を通したあとに元の文字列へ戻らない: \"" + s + "\"");
+        }
     }
 
     // ── 設定オプションの lang キー ─────────────────────────────────────────

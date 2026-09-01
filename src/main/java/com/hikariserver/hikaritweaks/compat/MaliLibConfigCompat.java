@@ -52,6 +52,12 @@ import java.util.Locale;
 //     プレースホルダを表示する。これが v1.1.0 のバグだった。
 //   ★ 逆に「翻訳済みの文字列」を渡すのは不可。世代 B ではキー lookup が優先されるので
 //     二重管理になり、lang キーを消したときに黙って訳文へ戻るなど挙動が読めなくなる。
+//   ★ さらに getComment() 自体も上書きしている。malilib はコメントを
+//     **2 回** String.format に通す（WidgetHoverInfo がもう一度 translate する）ため、
+//     リテラルの % を含む訳文は再エスケープしないと "Format error: ..." になる。
+//     理由と経路は escapeForSecondFormatPass() のコメントに詳しく書いた。
+//     コンストラクタへ lang キーを渡すのは、上書きを外したときに世代 C が
+//     "... Comment?" プレースホルダへ落ちないようにする保険として残してある。
 //
 // 表示名: malilib 側に「全世代で効く引数」が存在しないため、自前で lookup して
 //   getConfigGuiDisplayName() を上書きする。
@@ -86,6 +92,60 @@ public final class MaliLibConfigCompat {
         return key.equals(translated) ? name : translated;
     }
 
+    // ── malilib の二重書式化への対処 ─────────────────────────────────────────
+    //
+    // ★ この再エスケープを消してはいけない。消すと耐久値警告のホバーコメントが
+    //   全 17 ターゲット・en_us / ja_jp の両方で
+    //   "Format error: Warns in chat when an item's durability drops to 1% or lower."
+    //   になる（v1.2.0 のバグ）。「余計な %% を掃除する」のは禁止。
+    //
+    // なぜ必要か:
+    //   malilib は設定コメントを **2 回** String.format に通す。
+    //     1 回目 … コメントの解決時。malilib の ConfigBase.getComment() も
+    //              下の comment() も、最後は I18n.translate(キー) を呼ぶ。
+    //              vanilla の I18n.translate は引数の有無に関係なく必ず
+    //              String.format(訳文, args) を実行する（全 17 ターゲットで同一）。
+    //              ここで lang の "%%" が "%" に戻る。
+    //     2 回目 … その戻り値を malilib 自身が再度 translate する。
+    //              WidgetConfigOption.addConfigComment(コメント文字列)
+    //                → new WidgetHoverInfo(..., コメント文字列)
+    //                → WidgetHoverInfo.setInfoLines() が StringUtils.translate(コメント文字列)
+    //              StringUtils.translate は I18n.translate そのものなので、
+    //              「もう訳し終わった文字列」がふたたび書式文字列として扱われる。
+    //              この経路は 0.10.0-dev.26 〜 0.27.17 の全 17 バージョンに存在する
+    //              （jar の逆アセンブルで確認済み。世代 A/B/C/D で違いは無い）。
+    //   その結果、1 回目を通った時点で生の "%" が残っていると 2 回目で必ず壊れる。
+    //     en_us "… drops to 1% or lower."  → "% o" が変換指定子扱い
+    //                                        → MissingFormatArgumentException
+    //     ja_jp "… 1% 以下 …"              → "% 以" が不正な変換文字
+    //                                        → UnknownFormatConversionException
+    //   I18n.translate は IllegalFormatException を握り潰して
+    //   "Format error: " + 訳文 を返すため、ログにも例外にも出ず画面にだけ出る。
+    //
+    // 対策:
+    //   getComment() が返す直前に "%" を "%%" へ**戻して**おく。
+    //   malilib の 2 回目の String.format がそれを "%" に戻すので画面には正しく出る。
+    //   lang 側は今までどおり "%%"（＝リテラルの % 1 個）のままでよい。
+    //   往復は LangFormatTest#configCommentsSurviveMaliLibDoubleFormat が CI で検証する。
+    //
+    // 注意: コメントに %d などの本物の変換指定子は書けない（"%%d" になって
+    //   そのまま表示される）。malilib はコメントへ書式引数を渡さないので元々使えない。
+    public static String escapeForSecondFormatPass(String resolved) {
+        return resolved == null ? null : resolved.replace("%", "%%");
+    }
+
+    // ホバーコメントを解決する。
+    //
+    // malilib 側の getComment() は世代ごとに 3 通りの実装があり
+    //（クラス先頭のコメント参照）、どれを踏むかで結果が変わりうる。
+    // ここで自前に引き直して上書きすることで、4 世代すべてで同じ文字列になる。
+    // lang にキーが無ければ I18n.translate はキー文字列をそのまま返すので、
+    // ホバーにキーが出て気付ける（null を返すと世代 C/D の
+    // ConfigBase.getComment() 経由で NPE になりうるため、null は返さない）。
+    private static String comment(String name) {
+        return escapeForSecondFormatPass(I18n.translate(commentKey(name)));
+    }
+
     // ── 設定オプションのサブクラス ───────────────────────────────────────────
     //
     // 3 クラスとも「comment 引数に lang キーを渡す」「表示名は自前で引く」だけの薄い皮。
@@ -102,6 +162,14 @@ public final class MaliLibConfigCompat {
         @Override
         public String getConfigGuiDisplayName() {
             return displayName(this.getName());
+        }
+
+        // malilib の二重書式化対策。詳細は escapeForSecondFormatPass() のコメント。
+        // BooleanHotkeyGuiWrapper はここの戻り値を自分の comment に写して持つので、
+        // 補助機能タブ（ラッパー経由）でも同じ文字列が使われる。
+        @Override
+        public String getComment() {
+            return comment(this.getName());
         }
 
         // 世代 C/D 用。BooleanHotkeyGuiWrapper がここへ委譲してくるので、
@@ -126,6 +194,13 @@ public final class MaliLibConfigCompat {
             return displayName(this.getName());
         }
 
+        // malilib の二重書式化対策。詳細は escapeForSecondFormatPass() のコメント。
+        // ホットキータブと GuiKeybindSettings の両方がこの戻り値をホバーに使う。
+        @Override
+        public String getComment() {
+            return comment(this.getName());
+        }
+
         // 世代 C/D では getConfigGuiDisplayName() の既定実装がこれを呼ぶ。
         // 直接表示される設定なので上の上書きだけでも足りるが、
         // malilib 側の呼び出し経路が増えたときに備えて両方そろえておく。
@@ -147,6 +222,12 @@ public final class MaliLibConfigCompat {
         @Override
         public String getConfigGuiDisplayName() {
             return displayName(this.getName());
+        }
+
+        // malilib の二重書式化対策。詳細は escapeForSecondFormatPass() のコメント。
+        @Override
+        public String getComment() {
+            return comment(this.getName());
         }
 
         // 世代 C/D 用。ConfigStringList には prettyName を渡すコンストラクタが
