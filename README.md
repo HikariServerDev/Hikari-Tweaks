@@ -33,13 +33,31 @@
 
 ### 1.3 Hotbar Auto-Restock
 
-- When you open a container, automatically restocks specified items from the container into your hotbar
+- When you open a **real container block**, automatically restocks the items on your restock list from that container into your hotbar
 - Toggleable (hotkey supported)
+- Detection deliberately fails closed. Restocking only runs when **all** of the following hold:
+  1. Your crosshair is on a block that the client knows has a block entity, and that block entity holds an inventory
+  2. That block entity is not an ender chest
+  3. The number of container slots in the open screen equals that block entity's inventory size — a chest (and only a chest) may also be exactly double, so double chests work
+
+What that means in practice:
+
+| Opened by | Restocks? | Why |
+|---|---|---|
+| Chest / trapped chest, single or double | Yes | Real block entity; a chest is allowed to be exactly 2x its own size |
+| Barrel, shulker box **placed as a block** | Yes | Real block entity, slot count matches |
+| Hopper, dispenser, dropper, furnace family, brewing stand | Yes | Same rule — any block entity whose inventory size matches the screen qualifies |
+| Ender chest | No | Excluded explicitly: its contents are per-player and servers often swap them out |
+| Chest / hopper minecart, chest boat, villager trading | No | Entities, not block entities — there is no block entity under the crosshair |
+| Crafting table, enchanting table, anvil | No | No block entity holding an inventory |
+| Your own inventory screen | No | Rejected before detection runs |
+| Plugin menu opened by a command, an NPC or an item | No | Nothing under the crosshair to confirm it against |
+| Plugin menu opened by right-clicking a real container, **with a matching slot count** | Yes — not detectable | Identical to the real block from the client's point of view; see below |
+
+Caveat: the slot-count check catches the common mismatch (right-clicking a 27-slot chest and getting a 54-slot shop GUI), but a virtual GUI that happens to use exactly the size of the block it was opened from cannot be told apart on the client. On servers with chest-backed menus, keep the restock list narrow.
 
 Notes:
 
-- Doesn't run on the player inventory screen
-- Doesn't run when opening an ender chest
 - Automatically closes the screen after restocking
 
 ### 1.4 Totem of Undying Auto-Restock
@@ -48,9 +66,9 @@ Notes:
 - Adjusted so normal slot switches don't trigger it
 - Toggleable (hotkey supported)
 
-### 1.7 Hand Auto-Restock (new in v1.0.6)
+### 1.5 Hand Auto-Restock (new in v1.0.6)
 
-- When any hotbar item drops to **5 or fewer**, automatically restocks from your inventory
+- When a **listed** item on your hotbar drops to **5 or fewer**, automatically restocks from your inventory
 - Behaves like Tweakeroo's handrestock; the target list is managed in the **Hand Restock List** on the Lists tab
 - Monitors only the hotbar; the inventory is used only as a restock source
 - Toggleable (hotkey supported)
@@ -64,6 +82,22 @@ Notes:
 - Header / body / text / score / self-highlight colors adjustable in ARGB
 - Toggle for server total (Total) display
 - Player management tab (block-toggle for display)
+- Score numbers animate smoothly instead of jumping (see 1.7)
+
+### 1.7 Smooth Score Animation (custom HUD)
+
+Numbers on the custom scoreboard HUD ease towards their new value instead of jumping.
+This is done entirely on the client by this mod — no extra data is sent over the network
+for it, and the server-side smoother that used to do this was removed — so **scores only
+animate for players who have Hikari-Tweaks installed**.
+
+- Always on; there is no config option. One was deliberately removed: at the current update rate the steps are almost always +1, and an integer display has nothing to draw between N and N+1, so the toggle made no visible difference either way
+- Real-time exponential easing (time constant ~0.12 s), so the speed is the same at any frame rate. If more than 0.5 s passes between frames (window unfocused, world loading) the value snaps straight to the real one instead of replaying the animation
+- Applies to the ranking rows **and** to the server total line
+- Only the displayed digits are eased. Sorting and ranks always come from the real values, so rows never swap places mid-animation
+- A row that has just appeared (new entry, or turning to a page you were not looking at) shows its real value immediately — it never counts up from zero
+- Requires the v2 ranking protocol. A server still sending the v1 packet gets exact values with no animation, because v1 rows carry no UUID to track a row by
+- The animation state is dropped when the board switches to a different statistic, so you never see a count-down between two unrelated numbers
 
 ---
 
@@ -110,7 +144,10 @@ Recommended (optional):
 
 ## 3. Installation
 
-1. Place `build/libs/hikari-tweaks-<version>.jar` in the client's `mods/`
+1. Place the jar matching your Minecraft version in the client's `mods/`.
+   A local build writes it to
+   `build/libs/<mod version>/hikari-tweaks-<version>+<minecraft version>.jar` (see §9);
+   released jars are published one per Minecraft version group (see the table in §2)
 2. Place the required mods (Fabric API / malilib) similarly
 3. Launch the game
 4. `config/hikari-tweaks.json` is generated on first launch
@@ -127,23 +164,36 @@ Recommended (optional):
 ### 4.2 Config tabs
 
 - `Tweaks`: on/off toggles for each feature
-- `Lists`: item ID list for hotbar auto-restock
+- `Lists`: the two item ID lists — **Hotbar Restock List** (hotbar auto-restock) and **Hand Restock List** (hand auto-restock)
 - `Hotkeys`: key bindings for feature toggles and opening the config screen
 - `Scoreboard`: scoreboard integration / display settings / player management
 
 ---
 
-## 5. Main Settings (defaults)
+## 5. Settings (defaults)
+
+Every field of `config/hikari-tweaks.json` is listed below — there are no others.
+The `scoreboard*` display fields are edited from the `Scoreboard` tab of the config
+screen rather than typed by hand.
 
 | Key | Default | Description |
 |---|---:|---|
+| `configVersion` | `7` | Config schema version. Written and migrated by the mod — do not edit |
 | `fixBeaconRangeFreeCam` | `true` | MiniHUD beacon range fix |
+| `fixBeaconRangeFreeCamHotkey` | `""` | Toggle hotkey for the above (unassigned) |
 | `durabilityWarningEnabled` | `true` | Durability 1% warning |
+| `durabilityWarningEnabledHotkey` | `""` | Toggle hotkey for the above (unassigned) |
 | `autoRestockHotbar` | `false` | Hotbar auto-restock |
+| `autoRestockHotbarHotkey` | `""` | Toggle hotkey for the above (unassigned) |
 | `totemRestock` | `false` | Totem auto-restock |
+| `totemRestockHotkey` | `""` | Toggle hotkey for the above (unassigned) |
 | `handRestock` | `false` | Hand auto-restock |
-| `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | Auto-restock target list |
+| `handRestockHotkey` | `""` | Toggle hotkey for the above (unassigned) |
+| `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | Hotbar auto-restock target list (**Hotbar Restock List**, Lists tab) |
+| `handRestockList` | *(empty)* | Hand auto-restock target list (**Hand Restock List**, Lists tab) |
 | `openConfigHotkey` | `H,T` | Key to open the config screen (hold `H` and press `T`) |
+| `scoreboardNextPageHotkey` | `""` | Custom HUD: next page (unassigned) |
+| `scoreboardPrevPageHotkey` | `""` | Custom HUD: previous page (unassigned) |
 | `scoreboardCustomHud` | `true` | Show custom HUD |
 | `scoreboardHideVanilla` | `true` | Hide the vanilla right-side scoreboard |
 | `scoreboardPageSize` | `10` | Rows per page (1–50) |
@@ -157,16 +207,30 @@ Recommended (optional):
 | `scoreboardSelfColor` | `0xFFFFFF55` | Self-row highlight color (ARGB) |
 | `scoreboardShowServerTotal` | `true` | Show server total |
 
+Colors are stored by Gson as signed decimal integers, so the hex values above appear in
+the file in decimal (`0xFFFFFFFF` is written as `-1`). Out-of-range numbers are clamped
+on load, and fields missing from an older file are filled in on startup.
+
 ---
 
 ## 6. Hotkeys
 
-- `Open Config`: default `H` + `T` (hold `H` and press `T`)
-- `fixBeaconRangeFreeCam`: unassigned (set as needed)
-- `durabilityWarningEnabled`: unassigned (set as needed)
-- `autoRestockHotbar`: unassigned (set as needed)
-- `totemRestock`: unassigned (set as needed)
-- `handRestock`: unassigned (set as needed)
+All hotkeys are edited from the config screen. A feature's toggle hotkey sits on that
+feature's own row in the `Tweaks` tab; the three below it live in the `Hotkeys` tab.
+Key combinations are stored comma-separated (`H,T` is displayed as `H + T`).
+
+| Hotkey | Config key | Default | Action |
+|---|---|---|---|
+| Open Config Screen | `openConfigHotkey` | `H,T` (hold `H`, press `T`) | Opens the Hikari-Tweaks config screen |
+| Scoreboard Next Page | `scoreboardNextPageHotkey` | unassigned | Custom HUD: next page |
+| Scoreboard Previous Page | `scoreboardPrevPageHotkey` | unassigned | Custom HUD: previous page |
+| MiniHUD Beacon Fix | `fixBeaconRangeFreeCamHotkey` | unassigned | Toggles `fixBeaconRangeFreeCam` |
+| Durability Warning | `durabilityWarningEnabledHotkey` | unassigned | Toggles `durabilityWarningEnabled` |
+| Hotbar Auto-Restock | `autoRestockHotbarHotkey` | unassigned | Toggles `autoRestockHotbar` |
+| Totem Restock | `totemRestockHotkey` | unassigned | Toggles `totemRestock` |
+| Hand Auto-Restock | `handRestockHotkey` | unassigned | Toggles `handRestock` |
+
+Pressing a toggle hotkey prints the resulting state in the action bar.
 
 ---
 
@@ -176,7 +240,8 @@ Recommended (optional):
 
 Receive:
 
-- `hikariscoreboard:ranking_data`
+- `hikariscoreboard:ranking_v2` — the delta ranking protocol; used whenever the server supports it
+- `hikariscoreboard:ranking_data` — the older full-snapshot protocol, kept for servers still on it
 - `hikariscoreboard:player_list_response`
 
 Send:
@@ -246,7 +311,18 @@ targets) use Stonecutter comment branches. See `docs/multiversion/PLAN.md` for t
 
 - Auto-restock features perform slot clicks as client-side operations
 - Hotbar auto-restock runs when a container is opened, closing the screen after completion
-- Custom scoreboard HUD is not drawn while the F3 debug screen is shown
+- The custom scoreboard HUD is skipped for that frame when **any** of the following holds:
+  - `scoreboardCustomHud` is off
+  - There is nothing to draw — the server has not sent a board yet, or it told the client to hide it
+  - The board it did send has zero entries
+  - The HUD is hidden entirely with F1 (`hudHidden`). The custom HUD is drawn from a `TAIL`
+    injection on `InGameHud.render`, which runs past vanilla's own F1 handling, so this is
+    checked explicitly instead of being inherited
+  - The F3 debug screen is shown. The condition is *"is F3 on"* and nothing else: on 1.21.9+
+    vanilla's `shouldShowDebugHud()` also returns true when debug entries are merely pinned,
+    so those targets read the F3 flag directly and the HUD does not vanish without F3
+- Hiding the vanilla sidebar (`scoreboardHideVanilla`) is independent of all of the above —
+  it applies even when the custom HUD is off
 
 ---
 
@@ -254,12 +330,15 @@ targets) use Stonecutter comment branches. See `docs/multiversion/PLAN.md` for t
 
 **GNU Lesser General Public License v3.0 (LGPL-3.0-or-later)**
 
-Copyright (C) 2025-2026 Hikari Server
+Copyright (C) 2025-2026 HikariServerDev
 
+LGPL-3.0 is written as a set of additional permissions layered on top of GPL-3.0 and
+incorporates it by reference, so both texts ship with this project:
 
-See the bundled [LICENSE](LICENSE) file and the following URLs for details:
-- https://www.gnu.org/licenses/lgpl-3.0.txt
-- https://www.gnu.org/licenses/gpl-3.0.txt
+- [COPYING.LESSER](COPYING.LESSER) — GNU Lesser General Public License v3
+- [COPYING](COPYING) — GNU General Public License v3
+
+Both are also bundled in `META-INF/` inside every published jar, together with `NOTICE`.
 
 ---
 

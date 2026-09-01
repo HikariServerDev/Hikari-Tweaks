@@ -271,6 +271,11 @@ public class HikariTweaksConfigScreen extends GuiConfigsBase
     // ConfigBooleanHotkeyed を GUI 用ラッパーに変換するヘルパー。
     // malilib 0.10（MC 1.17 系）には BooleanHotkeyGuiWrapper が存在しないため、
     // その場合は設定オブジェクトをそのまま返す（boolean とホットキーが別行で表示される）。
+    //
+    // NOTE: malilib 0.21.10 以降の BooleanHotkeyGuiWrapper は、行のラベルを
+    // 自分の name ではなく **中身の設定の getTranslatedName()** から取る。
+    // そのため補助機能タブの表示名は MaLiLibConfigCompat.BooleanHotkeyed 側の
+    // 上書きに依存している（docs/multiversion/PLAN.md §3.10）。
     //? if >=1.18 {
     private BooleanHotkeyGuiWrapper wrapConfig(fi.dy.masa.malilib.config.IHotkeyTogglable config) {
         return new BooleanHotkeyGuiWrapper(config.getPrettyName(), config, config.getKeybind());

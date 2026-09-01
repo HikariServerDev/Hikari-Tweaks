@@ -45,6 +45,29 @@ dependencies {
     modCompileOnly("maven.modrinth:modmenu:${prop("deps.modmenu")}") { isTransitive = false }
 }
 
+// ── ユニットテスト ─────────────────────────────────────────────────────────
+//
+// テストは代表 1 ターゲット（TEST_TARGET）でだけ動かす。
+// 対象は MC に依存しない純ロジック（scoreboard.v2 の コーデック / テーブル / 補間）で、
+// 17 ターゲットで同じテストを回しても新しい情報は 1 つも得られず CI 時間だけ 17 倍になる。
+// 他ターゲットは test の sourceSet を空にして compileTestJava ごと NO-SOURCE にする
+//（enabled = false だけでは compileTestJava が走って JUnit が無くて落ちる）。
+val TEST_TARGET = "1.18.2"
+
+if (sc.current.version == TEST_TARGET) {
+    dependencies {
+        testImplementation(platform("org.junit:junit-bom:5.10.2"))
+        testImplementation("org.junit.jupiter:junit-jupiter")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    }
+    tasks.test {
+        useJUnitPlatform()
+    }
+} else {
+    sourceSets["test"].java.setSrcDirs(emptyList<String>())
+    sourceSets["test"].resources.setSrcDirs(emptyList<String>())
+}
+
 loom {
     // splitEnvironmentSourceSets() は使わない。
     // MC 1.17.x は bundled server jar が無く Loom が split 構成をサポートしないため、
@@ -96,6 +119,17 @@ tasks.processResources {
 
     filesMatching("fabric.mod.json") { expand(props) }
     filesMatching("*.mixins.json") { expand("java" to "JAVA_$javaRelease") }
+}
+
+// LGPL-3.0 の 4(b) は「GNU GPL とこのライセンス文書のコピーを添えること」を求めている。
+// リポジトリに置くだけでは jar だけを受け取った人には届かないので、
+// 全ターゲットの jar へ META-INF/ として同梱する。
+// NOTICE も入れる（AST-Tweaks は Apache-2.0 で、4(d) が配布物への NOTICE 同梱を求めているため）。
+// remapJar は jar の中身をそのまま引き継ぐので、ここで入れれば配布 jar にも残る。
+tasks.jar {
+    from(rootProject.file("COPYING.LESSER")) { into("META-INF") }
+    from(rootProject.file("COPYING")) { into("META-INF") }
+    from(rootProject.file("NOTICE")) { into("META-INF") }
 }
 
 tasks.register<Copy>("buildAndCollect") {

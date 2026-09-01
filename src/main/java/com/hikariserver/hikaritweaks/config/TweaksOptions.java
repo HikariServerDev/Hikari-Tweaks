@@ -1,6 +1,7 @@
 package com.hikariserver.hikaritweaks.config;
 
 import com.google.common.collect.ImmutableList;
+import com.hikariserver.hikaritweaks.compat.MaliLibConfigCompat;
 import fi.dy.masa.malilib.config.IConfigBase;
 import fi.dy.masa.malilib.config.options.ConfigBooleanHotkeyed;
 import fi.dy.masa.malilib.config.options.ConfigHotkey;
@@ -18,54 +19,47 @@ public final class TweaksOptions {
 
     // ── 補助機能 ───────────────────────────────────────────────────────────────
 
+    // NOTE: 設定の「表示名」と「ホバーコメント」は MaLiLibConfigCompat が解決する。
+    // 生の ConfigBooleanHotkeyed / ConfigHotkey / ConfigStringList を直接 new しないこと。
+    //
+    // malilib は 17 ターゲットで 17 バージョンをピン留めしているサードパーティで、
+    // 名前とコメントの翻訳解決が 0.10 / 0.11.8 / 0.21.10 / 0.27.17 の 4 回作り替えられている。
+    // 特に comment 引数に "" を渡すと 0.21.10〜0.26.8（MC 1.21.1〜1.21.10）だけが
+    // "Durability Warning Enabled Comment?" というプレースホルダを表示する（v1.1.0 のバグ）。
+    // どの引数に何を渡すべきか・どの世代がどう振る舞うかは
+    // compat/MaliLibConfigCompat.java の先頭コメントと docs/multiversion/PLAN.md §3.10 に記録した。
+    //
+    // lang キーは設定名から機械的に導く（"config.name.<name.lower>" / "config.comment.<name.lower>"）。
+    // キーの過不足は LangFormatTest が検証する。
+
     // MiniHUD フリーカメラ時のビーコン範囲をプレイヤー位置基準に修正するオプション
-    // NOTE: MaLiLib は prettyName を StringUtils.translate() で自動翻訳し、
-    // comment は "config.comment.<name.lower>" キーを自動 lookup する。
-    // よって prettyName に lang キーを渡せば Minecraft の言語設定に追従する。
-    public static final ConfigBooleanHotkeyed FIX_BEACON_RANGE_FREE_CAM = new ConfigBooleanHotkeyed(
-            "fixBeaconRangeFreeCam", true, "",
-            "",
-            "config.name.fixbeaconrangefreecam"
-    );
+    public static final ConfigBooleanHotkeyed FIX_BEACON_RANGE_FREE_CAM =
+            new MaliLibConfigCompat.BooleanHotkeyed("fixBeaconRangeFreeCam", true, "");
     // 耐久値 1% 以下になったときにチャットへ警告を出すオプション
-    public static final ConfigBooleanHotkeyed DURABILITY_WARNING_ENABLED = new ConfigBooleanHotkeyed(
-            "durabilityWarningEnabled", true, "",
-            "",
-            "config.name.durabilitywarningenabled"
-    );
+    public static final ConfigBooleanHotkeyed DURABILITY_WARNING_ENABLED =
+            new MaliLibConfigCompat.BooleanHotkeyed("durabilityWarningEnabled", true, "");
     // コンテナを開いた時にホットバーへ自動補充するオプション
-    public static final ConfigBooleanHotkeyed AUTO_RESTOCK_HOTBAR = new ConfigBooleanHotkeyed(
-            "autoRestockHotbar", false, "",
-            "",
-            "config.name.autorestockhotbar"
-    );
+    public static final ConfigBooleanHotkeyed AUTO_RESTOCK_HOTBAR =
+            new MaliLibConfigCompat.BooleanHotkeyed("autoRestockHotbar", false, "");
     // 使われたトーテムをインベントリから補充するオプション
-    public static final ConfigBooleanHotkeyed TOTEM_RESTOCK = new ConfigBooleanHotkeyed(
-            "totemRestock", false, "",
-            "",
-            "config.name.totemrestock"
-    );
+    public static final ConfigBooleanHotkeyed TOTEM_RESTOCK =
+            new MaliLibConfigCompat.BooleanHotkeyed("totemRestock", false, "");
     // (Litematica 自動 Refresh は v1.0.10 で削除)
     // Tweakeroo handrestock 相当。リストのアイテムが 5 個以下になったらインベントリから自動補充する。
-    public static final ConfigBooleanHotkeyed HAND_RESTOCK = new ConfigBooleanHotkeyed(
-            "handRestock", false, "",
-            "",
-            "config.name.handrestock"
-    );
+    public static final ConfigBooleanHotkeyed HAND_RESTOCK =
+            new MaliLibConfigCompat.BooleanHotkeyed("handRestock", false, "");
 
     // ── リスト ─────────────────────────────────────────────────────────────────
 
     // ホットバー自動補充の対象アイテム ID リスト
-    public static final ConfigStringList HOTBAR_RESTOCK_LIST = new ConfigStringList(
+    public static final ConfigStringList HOTBAR_RESTOCK_LIST = new MaliLibConfigCompat.StringList(
             "hotbarRestockList",
-            ImmutableList.of("minecraft:firework_rocket", "minecraft:golden_carrot"),
-            ""
+            ImmutableList.of("minecraft:firework_rocket", "minecraft:golden_carrot")
     );
     // 手持ち自動補充の対象アイテム ID リスト
-    public static final ConfigStringList HAND_RESTOCK_LIST = new ConfigStringList(
+    public static final ConfigStringList HAND_RESTOCK_LIST = new MaliLibConfigCompat.StringList(
             "handRestockList",
-            ImmutableList.of(),
-            ""
+            ImmutableList.of()
     );
 
     // ── ホットキー ─────────────────────────────────────────────────────────────
@@ -73,22 +67,16 @@ public final class TweaksOptions {
     // 設定画面を開くホットキー（デフォルト: H を押しながら T）
     // malilib のキー組み合わせ表現はカンマ区切り（表示は "H + T"）。
     // 既定値は ClientConfig と必ず揃えること。
-    public static final ConfigHotkey OPEN_CONFIG = new ConfigHotkey(
-            "openConfig", ClientConfig.DEFAULT_OPEN_CONFIG_HOTKEY,
-            "",
-            "config.name.openconfig"
+    public static final ConfigHotkey OPEN_CONFIG = new MaliLibConfigCompat.Hotkey(
+            "openConfig", ClientConfig.DEFAULT_OPEN_CONFIG_HOTKEY
     );
     // スコアボードの次ページへ切り替えるホットキー
-    public static final ConfigHotkey SCOREBOARD_NEXT_PAGE = new ConfigHotkey(
-            "scoreboardNextPage", "",
-            "",
-            "config.name.scoreboardnextpage"
+    public static final ConfigHotkey SCOREBOARD_NEXT_PAGE = new MaliLibConfigCompat.Hotkey(
+            "scoreboardNextPage", ""
     );
     // スコアボードの前ページへ切り替えるホットキー
-    public static final ConfigHotkey SCOREBOARD_PREV_PAGE = new ConfigHotkey(
-            "scoreboardPrevPage", "",
-            "",
-            "config.name.scoreboardprevpage"
+    public static final ConfigHotkey SCOREBOARD_PREV_PAGE = new MaliLibConfigCompat.Hotkey(
+            "scoreboardPrevPage", ""
     );
 
     // ── タブ別グループ ─────────────────────────────────────────────────────────

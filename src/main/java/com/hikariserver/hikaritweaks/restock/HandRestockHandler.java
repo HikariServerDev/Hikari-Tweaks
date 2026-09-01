@@ -1,5 +1,6 @@
 package com.hikariserver.hikaritweaks.restock;
 
+import com.hikariserver.hikaritweaks.compat.ItemCompat;
 import com.hikariserver.hikaritweaks.compat.RegistryCompat;
 import com.hikariserver.hikaritweaks.config.TweaksOptions;
 import net.minecraft.client.MinecraftClient;
@@ -61,7 +62,7 @@ public final class HandRestockHandler {
 
             // 閾値以下なら補充を試みる
             if (stack.getCount() <= RESTOCK_THRESHOLD) {
-                boolean restocked = tryRestock(client, player, hotbarSlot, itemId, stack.getMaxCount());
+                boolean restocked = tryRestock(client, player, hotbarSlot);
                 if (restocked) {
                     // 補充成功したらインターバルをリセットして今 tick は 1 スロットのみ処理する
                     ticksSinceLastRestock = 0;
@@ -72,16 +73,32 @@ public final class HandRestockHandler {
     }
 
     // 指定ホットバースロットに対してインベントリから補充を行う。
-    // 補充できた場合は true を返す。
+    // 実際に 1 個以上動かせた場合だけ true を返す。
+    // ここで no-op なのに true を返すと ticksSinceLastRestock がリセットされ、
+    // 同じ操作を 5 tick ごとに永久に投げ続けることになる。
     private static boolean tryRestock(
             MinecraftClient client,
             ClientPlayerEntity player,
-            int hotbarSlot,
-            String itemId,
-            int maxCount
+            int hotbarSlot
     ) {
         ClientPlayerInteractionManager im = client.interactionManager;
         if (im == null) return false;
+
+        // 「画面を何も開いていない」状態でのみ操作する。
+        //
+        // currentScreenHandler instanceof PlayerScreenHandler は
+        //   ・画面を何も開いていないとき
+        //   ・自分のインベントリ画面（InventoryScreen）を開いているとき
+        // の両方で true になるので、これだけでは後者を弾けない。
+        //
+        // 後者で clickSlot を割り込ませると ScreenHandler.internalOnSlotClick の
+        // 「actionType != QUICK_CRAFT かつ quickCraftStage != 0 なら endQuickCraft()」
+        // という分岐に落ちる。つまりドラッグ分配（左ドラッグでのスタック分け）の最中に
+        // PICKUP が 1 発入るだけでドラッグが黙って中断され、そのクリック自体も捨てられる。
+        // さらにカーソルに何か持っている状態なら、最初の PICKUP がその中身を
+        // ソーススロットへ置く／入れ替えてしまう。
+        // どちらもプレイヤーの手動操作を壊すので、画面が開いていたら何もしない。
+        if (client.currentScreen != null) return false;
 
         // PlayerScreenHandler が開いているときのみ操作可能
         if (!(player.currentScreenHandler instanceof PlayerScreenHandler)) return false;
@@ -89,23 +106,33 @@ public final class HandRestockHandler {
         int syncId = player.currentScreenHandler.syncId;
         int hotbarScreenSlot = 36 + hotbarSlot; // ScreenHandler 上のスロット ID
 
-        // インベントリ（スロット 9〜35）を逆順に走査して同じアイテムを探す
         PlayerInventory inventory = player.getInventory();
+        ItemStack hotbarStack = inventory.getStack(hotbarSlot);
+        if (hotbarStack.isEmpty()) return false;
+
+        // インベントリ（スロット 9〜35）を逆順に走査して同じアイテムを探す
         for (int invSlot = 35; invSlot >= 9; invSlot--) {
             ItemStack source = inventory.getStack(invSlot);
             // 空スロットはスキップする
             if (source.isEmpty()) continue;
 
-            String sourceId = RegistryCompat.itemId(source.getItem());
-            // アイテム ID が一致するものだけ使う
-            if (!sourceId.equals(itemId)) continue;
+            // アイテム ID だけでなく付随データ（NBT / component）まで一致するものだけ使う。
+            //
+            // ID だけで判定すると、たとえば「花火（飛行時間 3）」のホットバーへ
+            // 「花火（飛行時間 1）」を右クリックで入れようとしてしまう。
+            // ScreenHandler.internalOnSlotClick はカーソルとスロットが canCombine でないとき
+            // 「入れる」のではなく「入れ替える」（ClickType.RIGHT でも同じ挙動）ため、
+            // 個数ぶんのクリックはただのスワップの往復になる。
+            // 偶数回なら見た目は元通りなのに true を返して 5 tick ごとに全パケットを投げ直し、
+            // 奇数回なら手に持っているアイテムが別物に化ける。
+            if (!ItemCompat.canCombine(source, hotbarStack)) continue;
 
             // ピックアップ → ホットバーへ右クリック分配 → 残りを戻す の 3 ステップ
-            int hotbarCount = inventory.getStack(hotbarSlot).getCount();
-            int needed = maxCount - hotbarCount;
-            if (needed <= 0) break;
+            int take = RestockRules.plannedMoveCount(
+                    hotbarStack.getCount(), hotbarStack.getMaxCount(), source.getCount());
+            // 満杯なら他のスロットを見ても入らないので打ち切る
+            if (take <= 0) break;
 
-            int take = Math.min(needed, source.getCount());
             int invScreenSlot = invSlot; // ScreenHandler 上のインベントリスロット ID はそのまま
 
             // 1. ソーススロットをピックアップする

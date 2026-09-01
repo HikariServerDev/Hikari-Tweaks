@@ -69,7 +69,14 @@ public class MixinInGameHud {
             net.minecraft.client.gui.DrawContext context,
             net.minecraft.client.render.RenderTickCounter tickCounter,
             CallbackInfo ci) {
-        // カスタムスコアボード HUD を毎フレーム描画する
+        // カスタムスコアボード HUD を毎フレーム描画する。
+        //
+        // ★ tickCounter は @Inject が対象メソッドの引数をそのまま要求するので
+        //   受け取っているだけで、中身は使わない。**使ってはいけない。**
+        //   RenderTickCounter が返すのは tick 内の位相であって経過時間ではなく、
+        //   docs/ranking-v2-protocol.md §5.2 が禁じている時計そのものである。
+        //   加えて RenderTickCounter のメソッド名は 1.21.5 で改名されているため
+        //   （PLAN.md §3.9）、呼んだ瞬間に 1.21.4 と 1.21.5 の両方は通らなくなる。
         ScoreboardHudRenderer.render(new DrawCtx(context));
     }
     *///?} elif >=1.20 {
@@ -100,7 +107,8 @@ public class MixinInGameHud {
             net.minecraft.client.gui.DrawContext context,
             float tickDelta,
             CallbackInfo ci) {
-        // カスタムスコアボード HUD を毎フレーム描画する
+        // カスタムスコアボード HUD を毎フレーム描画する。
+        // tickDelta は @Inject の要求で受け取っているだけ（上の >=1.21 分岐の注記を参照）。
         ScoreboardHudRenderer.render(new DrawCtx(context));
     }
     *///?} else {
@@ -131,7 +139,8 @@ public class MixinInGameHud {
             MatrixStack matrices,
             float tickDelta,
             CallbackInfo ci) {
-        // カスタムスコアボード HUD を毎フレーム描画する
+        // カスタムスコアボード HUD を毎フレーム描画する。
+        // tickDelta は @Inject の要求で受け取っているだけ（上の >=1.21 分岐の注記を参照）。
         ScoreboardHudRenderer.render(new DrawCtx(matrices));
     }
     //?}

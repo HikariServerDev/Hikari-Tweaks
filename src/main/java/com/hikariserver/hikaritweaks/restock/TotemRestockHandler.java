@@ -108,7 +108,25 @@ public final class TotemRestockHandler {
             return false;
         }
 
-        // プレイヤーインベントリ画面が開いているときのみ操作できる
+        // 「画面を何も開いていない」状態でのみ操作する。
+        //
+        // currentScreenHandler instanceof PlayerScreenHandler は
+        //   ・画面を何も開いていないとき
+        //   ・自分のインベントリ画面（InventoryScreen）を開いているとき
+        // の両方で true になるので、これだけでは後者を弾けない。
+        //
+        // 後者で clickSlot を割り込ませると ScreenHandler.internalOnSlotClick の
+        // 「actionType != QUICK_CRAFT かつ quickCraftStage != 0 なら endQuickCraft()」
+        // という分岐に落ちる。つまりドラッグ分配（左ドラッグでのスタック分け）の最中に
+        // PICKUP が 1 発入るだけでドラッグが黙って中断され、そのクリック自体も捨てられる。
+        // さらにカーソルに何か持っている状態なら、最初の PICKUP がその中身を
+        // ソーススロットへ置く／入れ替えてしまう。
+        // 画面が開いている間は補充せず pending のまま待つ（リトライ上限まで持ち越す）。
+        if (client.currentScreen != null) {
+            return false;
+        }
+
+        // PlayerScreenHandler が開いているときのみ操作できる
         if (!(player.currentScreenHandler instanceof PlayerScreenHandler)) {
             return false;
         }

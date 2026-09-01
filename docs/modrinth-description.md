@@ -4,7 +4,7 @@
 
 # Hikari-Tweaks
 
-[![License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://github.com/HikariServerDev/Hikari-Tweaks/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://github.com/HikariServerDev/Hikari-Tweaks/blob/main/COPYING.LESSER)
 [![Modrinth](https://img.shields.io/modrinth/dt/hikari-tweaks?label=Modrinth%20Downloads)](https://modrinth.com/mod/hikari-tweaks)
 
 </div>
@@ -16,17 +16,22 @@
 
 ### tweakCustomScoreboardHud
 
-> Renders [HikariScoreBoard](https://modrinth.com/mod/hikariscoreboard) rankings as a fully customizable HUD. Configurable position (anchor X/Y 0-100%), scale (0.5x-3.0x), pagination (1-50 rows per page), and independent ARGB colors for header, body, text, score, and self-highlight rows. Hides the vanilla sidebar by default.
+> Renders [HikariScoreBoard](https://modrinth.com/mod/hikariscoreboard) rankings as a fully customizable HUD. Configurable position (anchor X/Y 0-100%), scale (0.5x-3.0x), pagination (1-50 rows per page), and independent ARGB colors for header, body, text, score, and self-highlight rows. Hides the vanilla sidebar by default. Not drawn while the F3 debug screen is open or the HUD is hidden with F1.
+<br><br>
+
+### tweakSmoothScoreAnimation
+
+> Numbers on the custom HUD ease towards their new value instead of jumping. The smoothing runs entirely on the client inside this mod — nothing extra goes over the network for it, and the old server-side smoother has been removed — so **scores only animate for players who have Hikari-Tweaks installed**. It is always on and has no setting. Real-time exponential easing (~0.12 s time constant) keeps the speed identical at any frame rate, and a gap of more than 0.5 s between frames (window unfocused, world loading) snaps straight to the real value instead of replaying the animation. Only the drawn digits are eased: sorting and ranks always come from the real values, so rows never swap places mid-animation, and a row that has just appeared shows its real value immediately rather than counting up from zero. Applies to the ranking rows and to the server total line. Requires the v2 ranking protocol — a server still sending v1 packets gets exact values with no animation.
 <br><br>
 
 ### tweakDurabilityWarning
 
-> Warns via chat notification and sound when any equipped tool drops to 1% durability. Duplicate warnings for the same item state are suppressed. Toggle via hotkey.
+> Warns via chat notification and sound when a damageable item drops to 1% durability or lower. Every slot of your inventory is checked, not just the item in your hand. The warning fires once when an item enters the warning state and re-arms only after it leaves it, so repairing and re-damaging warns again while grinding down the last percent does not spam.
 <br><br>
 
 ### tweakAutoRestockHotbar
 
-> When you open a container (chest, shulker-box, etc.), automatically restocks the specified items from the container into your hotbar. Configurable list in the Lists tab. Excludes player inventory / ender chest to avoid interference. Auto-closes the screen after restocking.
+> When you open a real container block, automatically restocks the items on your list from that container into your hotbar, then closes the screen. The list is configurable in the Lists tab. Detection deliberately fails closed: it only fires when your crosshair is on a block whose block entity holds an inventory, that block entity is not an ender chest, and the screen's container slot count matches that inventory's size — a chest, and only a chest, may also be exactly double, so double chests work. Chests, trapped chests, barrels, placed shulker boxes, hoppers, dispensers, droppers, furnaces and brewing stands therefore qualify. Ender chests are excluded outright. Chest and hopper minecarts, chest boats and villager trades are excluded because they are entities rather than block entities, so there is no block entity under the crosshair. Plugin menus opened from a command, an NPC or an item are excluded for the same reason. A plugin menu opened by right-clicking a real container **with the same slot count** cannot be told apart on the client, so keep the list narrow on servers with chest-backed shop GUIs.
 <br><br>
 
 ### tweakTotemRestock
@@ -36,7 +41,7 @@
 
 ### tweakHandRestock
 
-> Tweakeroo-style handrestock: when any item on your hotbar drops to 5 or fewer, automatically pulls a replacement from your inventory. The restock list is separate from the container-open list for granular control.
+> Tweakeroo-style handrestock: when a listed item on your hotbar drops to 5 or fewer, automatically pulls a replacement from the rest of your inventory. Only the hotbar is watched; the inventory is used as a source only. The restock list is separate from the container-open list for granular control.
 <br><br>
 
 ### tweakBeaconRangeFreeCamFix
@@ -46,7 +51,7 @@
 
 ### tweakScoreboardPlayerManagement
 
-> When paired with HikariScoreBoard, provides a chest-based GUI to manage which players are shown in rankings (block/unblock). Bot players from Carpet are also visually distinguished in the list.
+> When paired with HikariScoreBoard, the **Scoreboard** tab of the in-game config screen lists the players the server knows about, split into Shown and Hidden groups, and lets you toggle whether each one appears in the rankings. Entries the server flags as bots are labelled `[Bot]` so they are easy to pick out.
 <br><br>
 
 ## Requirements
@@ -54,31 +59,31 @@
 - Minecraft **1.17.1 - 1.21.11** (Fabric)
 - **Fabric Loader** >= 0.14.0 (MC 1.17.1 - 1.20.4) / >= 0.15.10 (MC 1.20.5 and newer)
 - **Fabric API**
-- **[MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib)** — a per-jar minimum version is declared; the build target version of MaLiLib (or newer) is required
+- **[MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib)** — each jar declares its own minimum, listed in the table below
 
 ### Supported versions
 
 One jar is published per Minecraft version group. Download the one matching your game.
 
-| Jar | Supported Minecraft versions |
-|---|---|
-| `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 |
-| `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 |
-| `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 |
-| `hikari-tweaks-<version>+1.19.2.jar` | 1.19, 1.19.1, 1.19.2 |
-| `hikari-tweaks-<version>+1.19.3.jar` | 1.19.3 |
-| `hikari-tweaks-<version>+1.19.4.jar` | 1.19.4 |
-| `hikari-tweaks-<version>+1.20.1.jar` | 1.20, 1.20.1 |
-| `hikari-tweaks-<version>+1.20.2.jar` | 1.20.2 |
-| `hikari-tweaks-<version>+1.20.4.jar` | 1.20.3, 1.20.4 |
-| `hikari-tweaks-<version>+1.20.6.jar` | 1.20.5, 1.20.6 |
-| `hikari-tweaks-<version>+1.21.1.jar` | 1.21, 1.21.1 |
-| `hikari-tweaks-<version>+1.21.3.jar` | 1.21.2, 1.21.3 |
-| `hikari-tweaks-<version>+1.21.4.jar` | 1.21.4 |
-| `hikari-tweaks-<version>+1.21.5.jar` | 1.21.5 |
-| `hikari-tweaks-<version>+1.21.8.jar` | 1.21.6, 1.21.7, 1.21.8 |
-| `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 |
-| `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 |
+| Jar | Supported Minecraft versions | Minimum MaLiLib |
+|---|---|---|
+| `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 | 0.10.0-dev.26 |
+| `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 | 0.11.8 |
+| `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 | 0.12.0 |
+| `hikari-tweaks-<version>+1.19.2.jar` | 1.19, 1.19.1, 1.19.2 | 0.13.0 |
+| `hikari-tweaks-<version>+1.19.3.jar` | 1.19.3 | 0.14.1-pre.1 |
+| `hikari-tweaks-<version>+1.19.4.jar` | 1.19.4 | 0.15.4 |
+| `hikari-tweaks-<version>+1.20.1.jar` | 1.20, 1.20.1 | 0.16.3 |
+| `hikari-tweaks-<version>+1.20.2.jar` | 1.20.2 | 0.17.0 |
+| `hikari-tweaks-<version>+1.20.4.jar` | 1.20.3, 1.20.4 | 0.18.4-alpha.1 |
+| `hikari-tweaks-<version>+1.20.6.jar` | 1.20.5, 1.20.6 | 0.19.2 |
+| `hikari-tweaks-<version>+1.21.1.jar` | 1.21, 1.21.1 | 0.21.10 |
+| `hikari-tweaks-<version>+1.21.3.jar` | 1.21.2, 1.21.3 | 0.22.8 |
+| `hikari-tweaks-<version>+1.21.4.jar` | 1.21.4 | 0.23.5 |
+| `hikari-tweaks-<version>+1.21.5.jar` | 1.21.5 | 0.24.3 |
+| `hikari-tweaks-<version>+1.21.8.jar` | 1.21.6, 1.21.7, 1.21.8 | 0.25.7 |
+| `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 | 0.26.8 |
+| `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 | 0.27.17 |
 
 ## Opening the config screen
 
@@ -115,6 +120,9 @@ Developed at: **[Hikari Server (光鯖)](https://hikariserver.com)** — a Minec
 
 **GNU Lesser General Public License v3 (LGPL-3.0-or-later)**
 
-Copyright (C) 2025-2026 Hikari Server
+Copyright (C) 2025-2026 HikariServerDev
 
-See the bundled `LICENSE` file for details. Referenced third-party projects retain their own licenses (see `NOTICE`).
+LGPL-3.0 layers additional permissions on top of GPL-3.0 and incorporates it by
+reference, so both texts are distributed with the project as `COPYING.LESSER` (LGPL)
+and `COPYING` (GPL); every jar carries a copy of both in `META-INF/`. Referenced
+third-party projects retain their own licenses (see `NOTICE`).

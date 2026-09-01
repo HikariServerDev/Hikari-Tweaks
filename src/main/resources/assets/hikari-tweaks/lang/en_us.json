@@ -6,7 +6,7 @@
   "config.name.fixbeaconrangefreecam": "MiniHUD Beacon Fix",
   "config.comment.fixbeaconrangefreecam": "Fixes MiniHUD's beacon range display to use the player's position instead of the freecam position.",
   "config.name.durabilitywarningenabled": "Durability Warning",
-  "config.comment.durabilitywarningenabled": "Warns in chat when an item's durability drops to 1% or lower.",
+  "config.comment.durabilitywarningenabled": "Warns in chat when an item's durability drops to 1%% or lower.",
   "config.name.autorestockhotbar": "Hotbar Auto-Restock",
   "config.comment.autorestockhotbar": "When you open a container (e.g. chest), restocks the listed items from the container into your hotbar.",
   "config.name.totemrestock": "Totem Restock",

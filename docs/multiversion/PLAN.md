@@ -16,6 +16,19 @@
 - `chiseledBuild` で全ターゲットのビルドを一括実行でき、CI に載せやすい。
 - Fabric 系マルチバージョン Mod の事実上の標準。
 
+### プリプロセッサコメントの落とし穴（Stonecutter 0.9.7 実測）
+
+> ⚠️ **`//? if ...` の分岐の中身を `//` コメント行だけにしてはいけない。**
+> 非アクティブな分岐はソース上 `/* ... */` で囲まれており、その分岐がアクティブに
+> なるとき Stonecutter は行頭の `//` を剥がして復元する。
+> 分岐の中身がコメント行しか無いと**そのコメント自身の `//` まで剥がされ**、
+> 日本語のコメント本文がそのままコードとして残って**コンパイルが落ちる**。
+> 分岐には必ず実際の文を 1 つ以上含めること。
+> 「このバージョンでは何もしない」を表現したいなら、
+> コメントだけを置くのではなく空の実装や `return;` を書くか、
+> そもそもその分岐を作らずに条件を反転させる。
+> 実測でビルドを 1 回落として判明した（0.9.7）。
+
 ### ディレクトリ構成（移行後）
 
 ```
@@ -165,7 +178,7 @@ Loom が split 構成を拒否するため、クライアント専用コード�
 | Mixin | 差分（実測） |
 |---|---|
 | `MixinInGameHud.renderScoreboardSidebar` | 目的の対象は常に `(…, ScoreboardObjective)` 版。第1引数が `<1.20`: `MatrixStack` / `>=1.20`: `DrawContext` |
-| `MixinInGameHud.render` | `<1.20`: `(MatrixStack, float)` / `1.20〜1.20.6`: `(DrawContext, float)` / `>=1.21`: `(DrawContext, RenderTickCounter)` |
+| `MixinInGameHud.render` | `<1.20`: `(MatrixStack, float)` / `1.20〜1.20.6`: `(DrawContext, float)` / `>=1.21`: `(DrawContext, RenderTickCounter)`。`RenderTickCounter` はメソッド名が 1.21.5 で改名されている → §3.9 |
 | `MixinClientPlayNetworkHandler.onEntityStatus` | `packet.getEntity(world)` はほぼ不変。ステータス 35 も不変。低リスク |
 | `MixinOverlayRenderer` | MiniHUD 側の `renderOverlays` シグネチャ・`EntityUtils.getCameraEntity()` の記述子がバージョンで変わる。`@Redirect` の `target` に intermediary 名 (`Lnet/minecraft/class_1297;`) を直書きしているため、**MiniHUD のバージョンごとに確認必須**。最悪 `require = 0` で任意化する |
 
@@ -180,6 +193,85 @@ Loom が split 構成を拒否するため、クライアント専用コード�
 - **`splitEnvironmentSourceSets()`**: 全ターゲットで維持する（クライアント専用 Mod のため）。
 - **refmap**: Loom 1.17 は Mixin AP が既定オフのため `useLegacyMixinAp = true` を明示している。
   ソース構成を `src/main` 一本にしたため refmap 名は `hikari-tweaks.refmap.json`。
+
+### 3.9 `RenderTickCounter`（1.21.5 でメソッド名が改名）
+
+`InGameHud.render` の第 2 引数は 1.21 で `float` から `RenderTickCounter` に変わる（§3.7 の表）。
+**クラス名は 1.21 以降ずっと `net.minecraft.client.render.RenderTickCounter` のまま**だが、
+そのメソッド名が yarn の 1.21.5 で改名されている。intermediary 名は変わっていない。
+
+| intermediary | 〜1.21.4（yarn） | 1.21.5〜（yarn） |
+|---|---|---|
+| `method_60637` | `getTickDelta(boolean)` | `getTickProgress(boolean)` |
+| `method_60636` | `getLastFrameDuration()` | `getDynamicDeltaTicks()` |
+| `method_60638` | `getLastDuration()` | `getFixedDeltaTicks()` |
+
+- **実測で確認済み**。1.21 系の各ターゲットの yarn `mappings.tiny` を突き合わせた。
+  1.21.4 が改名前の最後のターゲットなので、この境界は 1.21.4 と 1.21.5 の両方を
+  ビルドしないと踏めない。**1.21.11 が通っても 1.21.4 が通る保証にはならない。**
+- **現状、この差分を踏んでいるコードは無い。** `MixinInGameHud.render` の `>=1.21` 分岐は
+  `@Inject` が対象メソッドの引数をそのまま要求するために `RenderTickCounter` を
+  受け取っているだけで、メソッドを 1 つも呼んでいない。
+  改名されたのは**メソッド名だけ**なので、型名を書く `@Inject` の記述子と引数宣言は
+  1.21〜1.21.11 で共通のまま通る。
+- かつて `compat/FrameTimeCompat` がこの差分を吸収していたが、
+  partial tick を使う機能そのものが無くなった（HUD 数値の補間の時計は
+  `System.nanoTime()`。理由は `docs/ranking-v2-protocol.md` §5.2）ため削除した。
+  **再び `RenderTickCounter` のメソッドを呼ぶ必要が出たら、必ず compat ファサードを
+  新設してそこへ閉じ込めること。** 素の名前で呼ぶコードは 1.21.4 と 1.21.5 の境界で必ず壊れる。
+- ★ ただしその前に、**取ろうとしている値が本当に必要か**を確認すること。
+  `RenderTickCounter` が返す partial tick は tick 内の位相であって経過時間ではなく、
+  tick レート変更・一時停止・サーバーラグで意味が変わる。
+  時間として使ってはいけない（`docs/ranking-v2-protocol.md` §5.2）。
+
+### 3.10 malilib の設定名／コメント翻訳（0.11.8・0.21.10・0.27.17 で 3 回変わった）
+
+ここまでの差分は Minecraft 側の API 変更だが、**これは唯一「サードパーティが 17 本の
+ピン留めバージョンの下で勝手に変わる」差分**であり、ビルドは通るのに画面表示だけが
+壊れる。バージョンを追加・更新するときは必ずこの節を読むこと。
+
+対象は `fi.dy.masa.malilib.config.options.ConfigBase` の `getComment()` と
+`fi.dy.masa.malilib.config.IConfigBase` の `getConfigGuiDisplayName()`。
+設定画面 1 行ぶんの「表示名（ラベル）」と「ホバーコメント」がここで決まる。
+**実測で確認済み**（Gradle キャッシュ内の malilib jar 17 本を `javap -c` で逆アセンブルし、
+sources jar のある 0.10.0-dev.26 / 0.12.0 / 0.26.8 はソースでも突き合わせた）。
+
+| 世代 | malilib | ターゲット | `getComment()` | `getConfigGuiDisplayName()` |
+|---|---|---|---|---|
+| A | 0.10.0-dev.26 | 1.17.1 | `StringUtils.translate(comment)`。**自動 lookup は無い**（comment 自身が lang キー） | `getName()`。**`config.name.*` を一切見ない** |
+| B | 0.11.8 〜 0.19.2 | 1.18.1 〜 1.20.6 | `getTranslatedOrFallback("config.comment."+name.toLowerCase(), comment)`。キーが優先で comment は単なるフォールバック | `getTranslatedOrFallback("config.name."+name.toLowerCase(), getName())` |
+| C | 0.21.10 〜 0.26.8 | 1.21.1 〜 1.21.10 | `comment.isEmpty()` なら **`splitCamelCase(name)+" Comment?"` を返して終わり**。非空なら `"comment."` を含むときだけ comment 自身をキーとして lookup、含まなければ `"config.comment."+…` を引く | `getTranslatedName()`。`translatedName` が `"name."` を含むときだけ lookup、含まなければ**そのまま返す**（既定値は `name` ＝生の camelCase） |
+| D | 0.27.17 | 1.21.11 | 世代 C から `isEmpty` 分岐だけ削除（空でも `config.comment.*` を引くので B 相当に戻った） | 世代 C と同じ |
+
+- 影響（v1.1.0 で出荷してしまった状態）:
+  - **コメント**: 全設定に `comment = ""` を渡していたため、世代 C の 6 ターゲット
+    （1.21.1 / 1.21.3 / 1.21.4 / 1.21.5 / 1.21.8 / 1.21.10）だけが
+    `"Durability Warning Enabled Comment?"` のようなプレースホルダを表示していた。
+    世代 A では空のホバー、世代 B / D は正常。
+  - **表示名**: `config.name.*` を自動で引くのは世代 B だけ。世代 A は生の `getName()`、
+    世代 C / D は `translatedName`（既定値＝生の `name`）をそのまま出すので、
+    **1.17.1 と 1.21.1〜1.21.11 は `fixBeaconRangeFreeCam` のような camelCase 表示**になっていた。
+- 対応: `compat/MaliLibConfigCompat`（`BooleanHotkeyed` / `Hotkey` / `StringList` の 3 サブクラス）。
+  - **コメント**: コンストラクタの `comment` 引数へ **lang キーそのもの**
+    (`"config.comment."+name.toLowerCase()`) を渡す。**4 世代すべてで正しく効く唯一の値**。
+    - 世代 A: `translate(キー)` → 訳文
+    - 世代 B: キーの自動 lookup が先に成功するので comment は読まれない（無害）
+    - 世代 C / D: `"comment."` を含むので comment 自身をキーとして lookup → 訳文
+    - ★ `""` は世代 C でプレースホルダになる。逆に**翻訳済みの文字列を渡すのも不可**
+      （世代 B ではキー lookup が優先されるので、渡した文字列が使われるのは
+      lang キーを消したときだけ。二重管理になり挙動が読めない）。
+  - **表示名**: 全世代で効くコンストラクタ引数が存在しない（世代 A に lookup 経路が無く、
+    `translatedName` を渡す引数は 0.21.x 以降にしか無い）ため、
+    `getConfigGuiDisplayName()` を自前で上書きして `config.name.*` を引く。
+    加えて世代 C / D では `BooleanHotkeyGuiWrapper`（boolean とホットキーを 1 行にまとめる
+    malilib 側のラッパー）が **中身の設定の `getTranslatedName()`** を呼ぶため、
+    そちらも上書きする。`getTranslatedName()` は 0.21.10 以降にしか無いので
+    `//? if >=1.21` で分岐している。
+- lang キーの過不足は `src/test/java/.../lang/LangFormatTest.java` が CI で検証する
+  （全設定名に `config.name.*` と `config.comment.*` が両方あること）。
+- ★ ここは**ビルドが通っても壊れていることが分からない**種類の差分なので、
+  malilib のバージョンを上げたら `ConfigBase#getComment` と
+  `IConfigBase#getConfigGuiDisplayName` を `javap -c` で読み直し、この表を更新すること。
 
 ---
 

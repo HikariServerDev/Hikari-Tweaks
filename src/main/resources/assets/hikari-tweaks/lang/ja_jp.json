@@ -6,7 +6,7 @@
   "config.name.fixbeaconrangefreecam": "MiniHUD ビーコン補正",
   "config.comment.fixbeaconrangefreecam": "MiniHUD フリーカメラ時のビーコン範囲をプレイヤー位置基準に修正します。",
   "config.name.durabilitywarningenabled": "耐久値警告",
-  "config.comment.durabilitywarningenabled": "耐久値が 1% 以下になったときにチャットへ警告を出します。",
+  "config.comment.durabilitywarningenabled": "耐久値が 1%% 以下になったときにチャットへ警告を出します。",
   "config.name.autorestockhotbar": "ホットバー自動補充",
   "config.comment.autorestockhotbar": "チェストなどのコンテナを開いた時、設定リストのアイテムをホットバーへ補充します。",
   "config.name.totemrestock": "トーテム補充",

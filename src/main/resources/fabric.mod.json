@@ -9,8 +9,8 @@
   ],
   "contact": {
     "homepage": "https://hikariserver.com",
-    "sources": "https://github.com/Tamago0314/Hikari-Tweaks",
-    "issues": "https://github.com/Tamago0314/Hikari-Tweaks/issues"
+    "sources": "https://github.com/HikariServerDev/Hikari-Tweaks",
+    "issues": "https://github.com/HikariServerDev/Hikari-Tweaks/issues"
   },
   "license": "LGPL-3.0-or-later",
   "icon": "assets/hikari-tweaks/icon.png",
