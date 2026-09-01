@@ -144,7 +144,10 @@ Minecraft のバージョン群ごとに 1 つの jar を配布しています�
 
 ## 3. 導入手順
 
-1. `build/libs/hikari-tweaks-<version>.jar` をクライアント側 `mods/` に配置
+1. 使用中の Minecraft バージョンに合う jar をクライアント側 `mods/` に配置
+   （ローカルビルドの出力先は
+   `build/libs/<mod version>/hikari-tweaks-<version>+<minecraft version>.jar`。§9 を参照。
+   配布物は Minecraft バージョン群ごとに 1 つなので、どれを選ぶかは §2 の表を参照）
 2. 依存 Mod（Fabric API / malilib）も同様に配置
 3. ゲーム起動
 4. 初回起動後、`config/hikari-tweaks.json` が生成されます
@@ -161,23 +164,36 @@ Minecraft のバージョン群ごとに 1 つの jar を配布しています�
 ### 4.2 設定タブ
 
 - `Tweaks`: 各機能の ON/OFF
-- `Lists`: ホットバー自動補充対象アイテムIDリスト
+- `Lists`: アイテムIDリスト 2 種（**ホットバー補充対象リスト** / **手持ち補充対象リスト**）
 - `Hotkeys`: 機能トグルや設定画面オープンのキー設定
 - `Scoreboard`: スコアボード連携・表示設定・プレイヤー管理
 
 ---
 
-## 5. 主要設定（デフォルト値）
+## 5. 設定一覧（デフォルト値）
+
+`config/hikari-tweaks.json` の全フィールドです（これ以外の項目はありません）。
+`scoreboard*` の表示設定は設定画面の `Scoreboard` タブから編集する項目で、
+手で書き換えることは想定していません。
 
 | 設定キー | 既定値 | 説明 |
 |---|---:|---|
+| `configVersion` | `7` | 設定スキーマのバージョン。Mod が書き込み・移行するので編集しないこと |
 | `fixBeaconRangeFreeCam` | `true` | MiniHUDのビーコン範囲補正 |
+| `fixBeaconRangeFreeCamHotkey` | `""` | 上記のトグルホットキー（初期未割当） |
 | `durabilityWarningEnabled` | `true` | 耐久1%警告 |
+| `durabilityWarningEnabledHotkey` | `""` | 上記のトグルホットキー（初期未割当） |
 | `autoRestockHotbar` | `false` | ホットバー自動補充 |
+| `autoRestockHotbarHotkey` | `""` | 上記のトグルホットキー（初期未割当） |
 | `totemRestock` | `false` | トーテム自動補充 |
+| `totemRestockHotkey` | `""` | 上記のトグルホットキー（初期未割当） |
 | `handRestock` | `false` | 手持ち自動補充 |
-| `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | 自動補充対象リスト |
+| `handRestockHotkey` | `""` | 上記のトグルホットキー（初期未割当） |
+| `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | ホットバー自動補充の対象リスト（「リスト」タブの **ホットバー補充対象リスト**） |
+| `handRestockList` | *(空)* | 手持ち自動補充の対象リスト（「リスト」タブの **手持ち補充対象リスト**） |
 | `openConfigHotkey` | `H,T` | 設定画面を開くキー（`H` を押しながら `T`） |
+| `scoreboardNextPageHotkey` | `""` | カスタムHUD: 次ページ（初期未割当） |
+| `scoreboardPrevPageHotkey` | `""` | カスタムHUD: 前ページ（初期未割当） |
 | `scoreboardCustomHud` | `true` | カスタムHUD表示 |
 | `scoreboardHideVanilla` | `true` | バニラ右側スコアボードを隠す |
 | `scoreboardPageSize` | `10` | 1ページの表示件数（1〜50） |
@@ -191,16 +207,30 @@ Minecraft のバージョン群ごとに 1 つの jar を配布しています�
 | `scoreboardSelfColor` | `0xFFFFFF55` | 自己行強調色（ARGB） |
 | `scoreboardShowServerTotal` | `true` | サーバー合計表示 |
 
+色は Gson が符号付き 10 進整数として書き出すため、ファイル上は上記の 16 進と同じ値が
+10 進で入ります（`0xFFFFFFFF` は `-1`）。範囲外の数値は読み込み時に丸められ、
+古いファイルに無いフィールドは起動時に補完されます。
+
 ---
 
 ## 6. ホットキー
 
-- `Open Config`: 既定 `H` + `T`（`H` を押しながら `T`）
-- `fixBeaconRangeFreeCam`: 初期未割当（任意で設定）
-- `durabilityWarningEnabled`: 初期未割当（任意で設定）
-- `autoRestockHotbar`: 初期未割当（任意で設定）
-- `totemRestock`: 初期未割当（任意で設定）
-- `handRestock`: 初期未割当（任意で設定）
+ホットキーは設定画面から編集します。機能トグルのホットキーは `Tweaks`（補助機能）タブの
+その機能の行にあり、下 3 つは `Hotkeys`（ホットキー）タブにあります。
+同時押しはカンマ区切りで保存されます（`H,T` は画面上 "H + T" と表示）。
+
+| ホットキー | 設定キー | 既定値 | 動作 |
+|---|---|---|---|
+| 設定画面を開く | `openConfigHotkey` | `H,T`（`H` を押しながら `T`） | Hikari-Tweaks の設定画面を開く |
+| スコアボード 次ページ | `scoreboardNextPageHotkey` | 未割当 | カスタムHUDを次のページへ |
+| スコアボード 前ページ | `scoreboardPrevPageHotkey` | 未割当 | カスタムHUDを前のページへ |
+| MiniHUD ビーコン補正 | `fixBeaconRangeFreeCamHotkey` | 未割当 | `fixBeaconRangeFreeCam` を切り替え |
+| 耐久値警告 | `durabilityWarningEnabledHotkey` | 未割当 | `durabilityWarningEnabled` を切り替え |
+| ホットバー自動補充 | `autoRestockHotbarHotkey` | 未割当 | `autoRestockHotbar` を切り替え |
+| トーテム補充 | `totemRestockHotkey` | 未割当 | `totemRestock` を切り替え |
+| 手持ち自動補充 | `handRestockHotkey` | 未割当 | `handRestock` を切り替え |
+
+トグル系のホットキーを押すと、切り替え後の状態がアクションバーに表示されます。
 
 ---
 
@@ -283,7 +313,17 @@ mixin のインジェクト対象）だけ Stonecutter のコメント分岐を�
 
 - 自動補充系はクライアント操作としてスロットクリックを行います
 - ホットバー自動補充はコンテナを開いたタイミングで実行され、完了後に画面を閉じます
-- F3デバッグ表示中はカスタムスコアボードHUDを描画しません
+- カスタムスコアボードHUDは、次の**いずれか**に当てはまるフレームでは描画されません
+  - `scoreboardCustomHud` が OFF
+  - 描くものが無い（サーバーからボードがまだ届いていない／サーバーが非表示を指示している）
+  - 届いたボードのエントリ数が 0
+  - F1 で HUD 全体を非表示にしている（`hudHidden`）。カスタムHUDは `InGameHud.render` の
+    `TAIL` から描いており、バニラ側の F1 処理をすり抜けるため、ここで明示的に弾いています
+  - F3 デバッグ画面の表示中。判定は **「F3 が ON かどうか」だけ** です。1.21.9 以降は
+    バニラの `shouldShowDebugHud()` が「ピン留め項目があるだけ」でも true を返すため、
+    F3 を押していないのに HUD が消えないよう、それらのターゲットでは F3 フラグを直接見ています
+- バニラサイドバーの非表示（`scoreboardHideVanilla`）は上記とは独立した設定で、
+  カスタムHUDが OFF でも適用されます
 
 ---
 

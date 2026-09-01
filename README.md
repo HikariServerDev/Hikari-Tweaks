@@ -68,7 +68,7 @@ Notes:
 
 ### 1.5 Hand Auto-Restock (new in v1.0.6)
 
-- When any hotbar item drops to **5 or fewer**, automatically restocks from your inventory
+- When a **listed** item on your hotbar drops to **5 or fewer**, automatically restocks from your inventory
 - Behaves like Tweakeroo's handrestock; the target list is managed in the **Hand Restock List** on the Lists tab
 - Monitors only the hotbar; the inventory is used only as a restock source
 - Toggleable (hotkey supported)
@@ -144,7 +144,10 @@ Recommended (optional):
 
 ## 3. Installation
 
-1. Place `build/libs/hikari-tweaks-<version>.jar` in the client's `mods/`
+1. Place the jar matching your Minecraft version in the client's `mods/`.
+   A local build writes it to
+   `build/libs/<mod version>/hikari-tweaks-<version>+<minecraft version>.jar` (see §9);
+   released jars are published one per Minecraft version group (see the table in §2)
 2. Place the required mods (Fabric API / malilib) similarly
 3. Launch the game
 4. `config/hikari-tweaks.json` is generated on first launch
@@ -161,23 +164,36 @@ Recommended (optional):
 ### 4.2 Config tabs
 
 - `Tweaks`: on/off toggles for each feature
-- `Lists`: item ID list for hotbar auto-restock
+- `Lists`: the two item ID lists — **Hotbar Restock List** (hotbar auto-restock) and **Hand Restock List** (hand auto-restock)
 - `Hotkeys`: key bindings for feature toggles and opening the config screen
 - `Scoreboard`: scoreboard integration / display settings / player management
 
 ---
 
-## 5. Main Settings (defaults)
+## 5. Settings (defaults)
+
+Every field of `config/hikari-tweaks.json` is listed below — there are no others.
+The `scoreboard*` display fields are edited from the `Scoreboard` tab of the config
+screen rather than typed by hand.
 
 | Key | Default | Description |
 |---|---:|---|
+| `configVersion` | `7` | Config schema version. Written and migrated by the mod — do not edit |
 | `fixBeaconRangeFreeCam` | `true` | MiniHUD beacon range fix |
+| `fixBeaconRangeFreeCamHotkey` | `""` | Toggle hotkey for the above (unassigned) |
 | `durabilityWarningEnabled` | `true` | Durability 1% warning |
+| `durabilityWarningEnabledHotkey` | `""` | Toggle hotkey for the above (unassigned) |
 | `autoRestockHotbar` | `false` | Hotbar auto-restock |
+| `autoRestockHotbarHotkey` | `""` | Toggle hotkey for the above (unassigned) |
 | `totemRestock` | `false` | Totem auto-restock |
+| `totemRestockHotkey` | `""` | Toggle hotkey for the above (unassigned) |
 | `handRestock` | `false` | Hand auto-restock |
-| `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | Auto-restock target list |
+| `handRestockHotkey` | `""` | Toggle hotkey for the above (unassigned) |
+| `hotbarRestockList` | `minecraft:firework_rocket`, `minecraft:golden_carrot` | Hotbar auto-restock target list (**Hotbar Restock List**, Lists tab) |
+| `handRestockList` | *(empty)* | Hand auto-restock target list (**Hand Restock List**, Lists tab) |
 | `openConfigHotkey` | `H,T` | Key to open the config screen (hold `H` and press `T`) |
+| `scoreboardNextPageHotkey` | `""` | Custom HUD: next page (unassigned) |
+| `scoreboardPrevPageHotkey` | `""` | Custom HUD: previous page (unassigned) |
 | `scoreboardCustomHud` | `true` | Show custom HUD |
 | `scoreboardHideVanilla` | `true` | Hide the vanilla right-side scoreboard |
 | `scoreboardPageSize` | `10` | Rows per page (1–50) |
@@ -191,16 +207,30 @@ Recommended (optional):
 | `scoreboardSelfColor` | `0xFFFFFF55` | Self-row highlight color (ARGB) |
 | `scoreboardShowServerTotal` | `true` | Show server total |
 
+Colors are stored by Gson as signed decimal integers, so the hex values above appear in
+the file in decimal (`0xFFFFFFFF` is written as `-1`). Out-of-range numbers are clamped
+on load, and fields missing from an older file are filled in on startup.
+
 ---
 
 ## 6. Hotkeys
 
-- `Open Config`: default `H` + `T` (hold `H` and press `T`)
-- `fixBeaconRangeFreeCam`: unassigned (set as needed)
-- `durabilityWarningEnabled`: unassigned (set as needed)
-- `autoRestockHotbar`: unassigned (set as needed)
-- `totemRestock`: unassigned (set as needed)
-- `handRestock`: unassigned (set as needed)
+All hotkeys are edited from the config screen. A feature's toggle hotkey sits on that
+feature's own row in the `Tweaks` tab; the three below it live in the `Hotkeys` tab.
+Key combinations are stored comma-separated (`H,T` is displayed as `H + T`).
+
+| Hotkey | Config key | Default | Action |
+|---|---|---|---|
+| Open Config Screen | `openConfigHotkey` | `H,T` (hold `H`, press `T`) | Opens the Hikari-Tweaks config screen |
+| Scoreboard Next Page | `scoreboardNextPageHotkey` | unassigned | Custom HUD: next page |
+| Scoreboard Previous Page | `scoreboardPrevPageHotkey` | unassigned | Custom HUD: previous page |
+| MiniHUD Beacon Fix | `fixBeaconRangeFreeCamHotkey` | unassigned | Toggles `fixBeaconRangeFreeCam` |
+| Durability Warning | `durabilityWarningEnabledHotkey` | unassigned | Toggles `durabilityWarningEnabled` |
+| Hotbar Auto-Restock | `autoRestockHotbarHotkey` | unassigned | Toggles `autoRestockHotbar` |
+| Totem Restock | `totemRestockHotkey` | unassigned | Toggles `totemRestock` |
+| Hand Auto-Restock | `handRestockHotkey` | unassigned | Toggles `handRestock` |
+
+Pressing a toggle hotkey prints the resulting state in the action bar.
 
 ---
 
@@ -281,7 +311,18 @@ targets) use Stonecutter comment branches. See `docs/multiversion/PLAN.md` for t
 
 - Auto-restock features perform slot clicks as client-side operations
 - Hotbar auto-restock runs when a container is opened, closing the screen after completion
-- Custom scoreboard HUD is not drawn while the F3 debug screen is shown
+- The custom scoreboard HUD is skipped for that frame when **any** of the following holds:
+  - `scoreboardCustomHud` is off
+  - There is nothing to draw — the server has not sent a board yet, or it told the client to hide it
+  - The board it did send has zero entries
+  - The HUD is hidden entirely with F1 (`hudHidden`). The custom HUD is drawn from a `TAIL`
+    injection on `InGameHud.render`, which runs past vanilla's own F1 handling, so this is
+    checked explicitly instead of being inherited
+  - The F3 debug screen is shown. The condition is *"is F3 on"* and nothing else: on 1.21.9+
+    vanilla's `shouldShowDebugHud()` also returns true when debug entries are merely pinned,
+    so those targets read the F3 flag directly and the HUD does not vanish without F3
+- Hiding the vanilla sidebar (`scoreboardHideVanilla`) is independent of all of the above —
+  it applies even when the custom HUD is off
 
 ---
 
