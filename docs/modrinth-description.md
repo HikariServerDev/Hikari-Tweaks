@@ -120,7 +120,7 @@ Developed at: **[Hikari Server (光鯖)](https://hikariserver.com)** — a Minec
 
 **GNU Lesser General Public License v3 (LGPL-3.0-or-later)**
 
-Copyright (C) 2025-2026 Hikari Server
+Copyright (C) 2025-2026 HikariServerDev
 
 LGPL-3.0 layers additional permissions on top of GPL-3.0 and incorporates it by
 reference, so both texts are distributed with the project as `COPYING.LESSER` (LGPL)

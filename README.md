@@ -330,7 +330,7 @@ targets) use Stonecutter comment branches. See `docs/multiversion/PLAN.md` for t
 
 **GNU Lesser General Public License v3.0 (LGPL-3.0-or-later)**
 
-Copyright (C) 2025-2026 Hikari Server
+Copyright (C) 2025-2026 HikariServerDev
 
 LGPL-3.0 is written as a set of additional permissions layered on top of GPL-3.0 and
 incorporates it by reference, so both texts ship with this project:

@@ -331,7 +331,7 @@ mixin のインジェクト対象）だけ Stonecutter のコメント分岐を�
 
 **GNU Lesser General Public License v3.0 (LGPL-3.0-or-later)**
 
-Copyright (C) 2025-2026 Hikari Server
+Copyright (C) 2025-2026 HikariServerDev
 
 LGPL-3.0 は GPL-3.0 に追加の許諾を重ねる形で書かれており、GPL-3.0 を参照によって取り込んでいます。
 そのため、このプロジェクトでは両方の全文を同梱しています:

@@ -121,7 +121,7 @@ Minecraft のバージョン群ごとに 1 つの jar を配布しています�
 
 **GNU Lesser General Public License v3 (LGPL-3.0-or-later)**
 
-Copyright (C) 2025-2026 Hikari Server
+Copyright (C) 2025-2026 HikariServerDev
 
 LGPL-3.0 は GPL-3.0 に追加の許諾を重ねる形で書かれており、GPL-3.0 を参照によって取り込んでいます。
 そのため両方の全文を `COPYING.LESSER`（LGPL）と `COPYING`（GPL）としてプロジェクトに同梱しており、
