@@ -31,6 +31,24 @@ Maintainer
   Tamago0314  (https://github.com/Tamago0314)
 
 ------------------------------------------------------------------------
+Bundled Third-Party Libraries
+------------------------------------------------------------------------
+
+This mod bundles the following third-party library inside every published jar,
+under META-INF/jars/, using Fabric's jar-in-jar mechanism. It is embedded
+unmodified and remains under its own license.
+
+  Gson
+    Copyright (C) 2008-2021 Google Inc.
+    Copyright (C) 2017-2018 The Gson authors
+    Licensed under the Apache License, Version 2.0
+    https://github.com/google/gson
+
+The exact version, the full copyright notices and the complete license text
+are in THIRD-PARTY-NOTICES.txt and licenses/Apache-2.0.txt, both of which ship
+in the same META-INF/ directory as this file.
+
+------------------------------------------------------------------------
 Third-Party References
 ------------------------------------------------------------------------
 

@@ -6,14 +6,68 @@
 
 > **Minecraft 1.17.1 〜 1.21.11 向けのクライアントサイド Fabric ユーティリティ Mod**。[Hikari Server (光鯖)](https://hikariserver.com) で開発されました。
 
-### Requirements
-| Mod | Type |
+### 必要な Mod
+| Mod | 区分 |
 |---|---|
-| [Fabric Loader](https://fabricmc.net/) `>=0.14.0`（MC 1.17.1 〜 1.20.4）/ `>=0.15.10`（MC 1.20.5 以降） | **Required** |
-| [Fabric API](https://modrinth.com/mod/fabric-api) | **Required** |
-| [MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib) | **Required** |
-| [MiniHUD](https://www.curseforge.com/minecraft/mc-mods/minihud) | Optional (beacon fix feature) |
-| [Mod Menu](https://modrinth.com/mod/modmenu) | Optional (GUI config screen) |
+| [Fabric Loader](https://fabricmc.net/) `>=0.14.0`（MC 1.17.1 〜 1.20.4）/ `>=0.15.10`（MC 1.20.5 以降） | **必須** |
+| [Fabric API](https://modrinth.com/mod/fabric-api) | **必須** |
+| [MaLiLib](https://www.curseforge.com/minecraft/mc-mods/malilib) | **必須** |
+| [MiniHUD](https://www.curseforge.com/minecraft/mc-mods/minihud) | 任意（ビーコン補正機能） |
+| [Mod Menu](https://modrinth.com/mod/modmenu) | 任意（GUI 設定画面） |
+
+---
+
+## 更新履歴
+
+### v1.2.1
+
+- **Minecraft 1.21.6 以降で、設定画面の文字がまったく表示されなかった問題を修正**
+  1.21.6 で `TextRenderer.tweakTransparency`（アルファ指定の無い色に `0xFF000000` を補う処理）が
+  削除され、あわせて `DrawContext#drawText` がアルファ 0 の色を受け取ると即座に return する
+  ようになりました。つまり描画キューにも入りません。この Mod は 21 か所で `0xFFFFFF` のような
+  アルファ無しの色を渡していたため、設定画面のプレイヤー名・種別ラベル・グループ見出し・
+  キャプションが丸ごと消えていました。ゲーム中の HUD は設定由来の ARGB 色（アルファ付き）で
+  描いているため影響を受けていません。
+  **Minecraft 1.21.6 〜 1.21.11 で遊んでいる場合は更新してください。** 影響を受けるのは
+  v1.1.0 と v1.2.0 の `+1.21.8` / `+1.21.10` / `+1.21.11` の 3 jar です。1.21.5 以前は
+  バニラ側が同じ変換を行うため、この修正による挙動の変化はありません。
+
+### v1.2.0
+
+- **`hikariscoreboard:ranking_v2`（差分プロトコル）の受信に対応。** サーバーが対応していれば
+  自動的にこちらを使い、旧い全件送信の `ranking_data` も引き続き受け付けます（§7 を参照）
+- **カスタム HUD のスコア数値が滑らかに動くようになりました**（1.7 を参照）。
+  クライアント側だけの処理で、常時 ON・設定項目はありません
+- 設定画面の項目名と説明文が翻訳されない問題を修正
+- 設定画面に `Format error:` が表示される問題を修正
+- 補充機能の誤爆と、自分のインベントリ操作へ干渉していた問題を修正
+- 設定画面が操作不能になる・状態が失われる問題を修正し、設定の読み込みを堅牢化
+- v1 ランキングパケットの不正データ対策、耐久値警告の連発、HUD の枠ずれを修正
+- ライセンス表記を LGPL-3.0-or-later として成立する形に整理（`COPYING` と `COPYING.LESSER` を
+  プロジェクトと全 jar に同梱し、著作権表記を HikariServerDev に統一）
+
+### v1.1.0
+
+- **マルチバージョン対応: Minecraft 1.17.1 〜 1.21.11。** v1.0.11 までは 1.18.2 専用でした。
+  v1.1.0 では 17 個の jar で 28 個の Minecraft バージョンに対応します。お使いのバージョンに
+  合うものをダウンロードしてください（§2 を参照）
+- **設定画面を開く既定キーを `右 Shift` から `H` + `T` に変更。** キーを変更していなかった場合は
+  自動で移行され、自分で割り当てていた場合はそのまま残ります
+- jar ごとに MaLiLib と Fabric Loader の下限バージョンを宣言するようにし、
+  組み合わせが合わないときは起動後にクラッシュせず導入時に弾かれるようになりました
+- MC 1.17.1 / 1.18 / 1.18.1 / 1.19 / 1.19.1 で Mod がまったく起動できなかった問題を修正
+  （Fabric API への依存を、0.59.0 以降にしか存在しない `fabric-api` の id で宣言していたため）
+- MiniHUD のバージョン違いで Mod 全体が起動しなくなる問題を修正。ビーコン補正を任意扱いにし、
+  適用できない場合はその機能だけが使えなくなります
+- MC 1.20.2 〜 1.21.5 で設定画面の背景が二重に暗くなっていた問題を修正
+- MC 1.17.1 〜 1.19.4 の HiDPI 環境でスコアボードのプレイヤー一覧が途中で切れる問題を修正
+- `F1` で HUD を隠してもカスタムスコアボードが消えない問題と、MC 1.21.9 以降で
+  デバッグ項目をピン留めしているだけで消えてしまう問題を修正
+- 色を編集してタブを切り替えると編集内容が失われる問題を修正
+- MC 1.20.5 以降で受信のたびにバッファがリークしていた問題を修正
+
+v1.1.0 より前（Minecraft 1.18.2 専用）のリリースについては
+[GitHub の releases](https://github.com/HikariServerDev/Hikari-Tweaks/releases) を参照してください。
 
 ---
 
@@ -66,7 +120,7 @@
 - 通常のスロット切り替えでは補充が発動しないように調整済み
 - ON/OFF 切り替え可能（ホットキー対応）
 
-### 1.5 手持ち自動補充（v1.0.6 新機能）
+### 1.5 手持ち自動補充
 
 - ホットバー内の指定アイテムが **5 個以下** になったとき、インベントリから自動で補充します
 - Tweakeroo の handrestock 機能と同様の動作で、補充対象は「リスト」タブの **手持ち補充対象リスト** で管理します
@@ -108,31 +162,31 @@
   - 1.20.5 以降の jar は Mixin の `compatibilityLevel = JAVA_21` を宣言しており、
     これを解釈できるのは sponge-mixin 0.13.3 を同梱した Fabric Loader 0.15.10 以降のためです。
 - Fabric API
-- malilib
+- MaLiLib — jar ごとに下限バージョンを宣言しています（下表を参照）
 
 ### 対応バージョン一覧
 
 Minecraft のバージョン群ごとに 1 つの jar を配布しています。使用中のバージョンに合うものをダウンロードしてください。
 
-| 配布 jar | 対応する Minecraft バージョン |
-|---|---|
-| `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 |
-| `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 |
-| `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 |
-| `hikari-tweaks-<version>+1.19.2.jar` | 1.19, 1.19.1, 1.19.2 |
-| `hikari-tweaks-<version>+1.19.3.jar` | 1.19.3 |
-| `hikari-tweaks-<version>+1.19.4.jar` | 1.19.4 |
-| `hikari-tweaks-<version>+1.20.1.jar` | 1.20, 1.20.1 |
-| `hikari-tweaks-<version>+1.20.2.jar` | 1.20.2 |
-| `hikari-tweaks-<version>+1.20.4.jar` | 1.20.3, 1.20.4 |
-| `hikari-tweaks-<version>+1.20.6.jar` | 1.20.5, 1.20.6 |
-| `hikari-tweaks-<version>+1.21.1.jar` | 1.21, 1.21.1 |
-| `hikari-tweaks-<version>+1.21.3.jar` | 1.21.2, 1.21.3 |
-| `hikari-tweaks-<version>+1.21.4.jar` | 1.21.4 |
-| `hikari-tweaks-<version>+1.21.5.jar` | 1.21.5 |
-| `hikari-tweaks-<version>+1.21.8.jar` | 1.21.6, 1.21.7, 1.21.8 |
-| `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 |
-| `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 |
+| 配布 jar | 対応する Minecraft バージョン | MaLiLib 下限 |
+|---|---|---|
+| `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 | 0.10.0-dev.26 |
+| `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 | 0.11.8 |
+| `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 | 0.12.0 |
+| `hikari-tweaks-<version>+1.19.2.jar` | 1.19, 1.19.1, 1.19.2 | 0.13.0 |
+| `hikari-tweaks-<version>+1.19.3.jar` | 1.19.3 | 0.14.1-pre.1 |
+| `hikari-tweaks-<version>+1.19.4.jar` | 1.19.4 | 0.15.4 |
+| `hikari-tweaks-<version>+1.20.1.jar` | 1.20, 1.20.1 | 0.16.3 |
+| `hikari-tweaks-<version>+1.20.2.jar` | 1.20.2 | 0.17.0 |
+| `hikari-tweaks-<version>+1.20.4.jar` | 1.20.3, 1.20.4 | 0.18.4-alpha.1 |
+| `hikari-tweaks-<version>+1.20.6.jar` | 1.20.5, 1.20.6 | 0.19.2 |
+| `hikari-tweaks-<version>+1.21.1.jar` | 1.21, 1.21.1 | 0.21.10 |
+| `hikari-tweaks-<version>+1.21.3.jar` | 1.21.2, 1.21.3 | 0.22.8 |
+| `hikari-tweaks-<version>+1.21.4.jar` | 1.21.4 | 0.23.5 |
+| `hikari-tweaks-<version>+1.21.5.jar` | 1.21.5 | 0.24.3 |
+| `hikari-tweaks-<version>+1.21.8.jar` | 1.21.6, 1.21.7, 1.21.8 | 0.25.7 |
+| `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 | 0.26.8 |
+| `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 | 0.27.17 |
 
 推奨（任意）:
 
@@ -339,7 +393,15 @@ LGPL-3.0 は GPL-3.0 に追加の許諾を重ねる形で書かれており、GP
 - [COPYING.LESSER](COPYING.LESSER) — GNU Lesser General Public License v3
 - [COPYING](COPYING) — GNU General Public License v3
 
-どちらも `NOTICE` とあわせて、配布する全 jar の `META-INF/` にも同梱しています。
+どちらも `NOTICE`・[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt)・[licenses/](licenses)
+とあわせて、配布する全 jar の `META-INF/` にも同梱しています。
+
+また、配布する全 jar には Fabric の jar-in-jar で [Gson](https://github.com/google/gson) 2.10.1 を
+`META-INF/jars/` に同梱しています。改変せずそのまま同梱しており、Gson 自体は
+**Apache License 2.0** のままです（Copyright (C) 2008-2021 Google Inc. /
+Copyright (C) 2017-2018 The Gson authors）。ライセンス全文は
+[licenses/Apache-2.0.txt](licenses/Apache-2.0.txt) に、ライブラリごとの詳細は
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt) にあります。
 
 ---
 

@@ -17,6 +17,60 @@
 
 ---
 
+## Changelog
+
+### v1.2.1
+
+- **Fixed: all text in the config screens was invisible on Minecraft 1.21.6 and newer**
+  1.21.6 removed `TextRenderer.tweakTransparency` — the helper that forced `0xFF000000` onto
+  any colour whose alpha bits were zero — and `DrawContext#drawText` now returns immediately
+  when the colour's alpha is 0, so that text never even reaches the draw queue. This mod passed
+  alpha-less literals such as `0xFFFFFF` at 21 call sites, so player names, type labels, group
+  headers and captions in the config screens disappeared entirely. The in-game HUD was
+  unaffected, because it draws with the ARGB colours from the config, which carry an alpha.
+  **Update if you play Minecraft 1.21.6 - 1.21.11.** The affected downloads are the `+1.21.8`,
+  `+1.21.10` and `+1.21.11` jars of v1.1.0 and v1.2.0. On 1.21.5 and older the fix is a no-op —
+  vanilla applies the same conversion itself — so nothing changes there.
+
+### v1.2.0
+
+- **Added: the `hikariscoreboard:ranking_v2` delta protocol.** Used automatically when the
+  server supports it; the older full-snapshot `ranking_data` channel still works (see §7).
+- **Added: smooth score animation on the custom HUD** (see 1.7). Client-side only, always on,
+  no setting.
+- Fixed: option names and descriptions in the config screen were left untranslated
+- Fixed: `Format error:` shown in the config screen
+- Fixed: auto-restock firing when it should not, and interfering with your own inventory clicks
+- Fixed: the config screen becoming unusable or losing its state; config loading hardened
+- Fixed: malformed v1 ranking packets, repeated durability warnings, and a misaligned HUD frame
+- License: LGPL-3.0-or-later restated properly — `COPYING` and `COPYING.LESSER` ship with the
+  project and inside every jar, and the copyright line is unified to HikariServerDev
+
+### v1.1.0
+
+- **Multi-version support: Minecraft 1.17.1 - 1.21.11.** Up to v1.0.11 this mod was 1.18.2 only.
+  v1.1.0 ships 17 jars covering 28 Minecraft versions — download the one matching your game
+  (see §2).
+- **Changed: the config screen now opens with `H` + `T`** instead of `Right Shift`. If you never
+  changed the key it is migrated for you; a key you bound yourself is left alone.
+- Added: each jar declares its own MaLiLib and Fabric Loader minimum, so an incompatible
+  combination is rejected up front instead of crashing later
+- Fixed: the mod would not load at all on MC 1.17.1 / 1.18 / 1.18.1 / 1.19 / 1.19.1 — the Fabric
+  API dependency used the `fabric-api` id, which only exists from Fabric API 0.59.0
+- Fixed: a MiniHUD version mismatch aborted startup for the whole mod; the beacon fix is now
+  optional, so only that one feature is lost
+- Fixed: config screens drawn under a double-darkened background on MC 1.20.2 - 1.21.5
+- Fixed: the scoreboard player list cut off on HiDPI displays on MC 1.17.1 - 1.19.4
+- Fixed: the custom scoreboard not hiding with `F1`, and disappearing on MC 1.21.9+ when a debug
+  entry was merely pinned
+- Fixed: editing a colour and switching tabs discarded the edit
+- Fixed: a receive buffer leaked on every incoming packet on MC 1.20.5+
+
+For releases before v1.1.0 — Minecraft 1.18.2 only — see the
+[GitHub releases](https://github.com/HikariServerDev/Hikari-Tweaks/releases).
+
+---
+
 
 ## 1. Main Features
 
@@ -66,7 +120,7 @@ Notes:
 - Adjusted so normal slot switches don't trigger it
 - Toggleable (hotkey supported)
 
-### 1.5 Hand Auto-Restock (new in v1.0.6)
+### 1.5 Hand Auto-Restock
 
 - When a **listed** item on your hotbar drops to **5 or fewer**, automatically restocks from your inventory
 - Behaves like Tweakeroo's handrestock; the target list is managed in the **Hand Restock List** on the Lists tab
@@ -108,31 +162,31 @@ animate for players who have Hikari-Tweaks installed**.
   - The 1.20.5+ jars declare `compatibilityLevel = JAVA_21` for Mixin, which Fabric Loader
     only understands from 0.15.10 onwards (the first release bundling sponge-mixin 0.13.3).
 - Fabric API
-- malilib
+- MaLiLib — each jar declares its own minimum; see the table below
 
 ### Supported versions
 
 One jar is published per Minecraft version group. Download the one matching your game.
 
-| Jar | Supported Minecraft versions |
-|---|---|
-| `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 |
-| `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 |
-| `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 |
-| `hikari-tweaks-<version>+1.19.2.jar` | 1.19, 1.19.1, 1.19.2 |
-| `hikari-tweaks-<version>+1.19.3.jar` | 1.19.3 |
-| `hikari-tweaks-<version>+1.19.4.jar` | 1.19.4 |
-| `hikari-tweaks-<version>+1.20.1.jar` | 1.20, 1.20.1 |
-| `hikari-tweaks-<version>+1.20.2.jar` | 1.20.2 |
-| `hikari-tweaks-<version>+1.20.4.jar` | 1.20.3, 1.20.4 |
-| `hikari-tweaks-<version>+1.20.6.jar` | 1.20.5, 1.20.6 |
-| `hikari-tweaks-<version>+1.21.1.jar` | 1.21, 1.21.1 |
-| `hikari-tweaks-<version>+1.21.3.jar` | 1.21.2, 1.21.3 |
-| `hikari-tweaks-<version>+1.21.4.jar` | 1.21.4 |
-| `hikari-tweaks-<version>+1.21.5.jar` | 1.21.5 |
-| `hikari-tweaks-<version>+1.21.8.jar` | 1.21.6, 1.21.7, 1.21.8 |
-| `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 |
-| `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 |
+| Jar | Supported Minecraft versions | Minimum MaLiLib |
+|---|---|---|
+| `hikari-tweaks-<version>+1.17.1.jar` | 1.17.1 | 0.10.0-dev.26 |
+| `hikari-tweaks-<version>+1.18.1.jar` | 1.18, 1.18.1 | 0.11.8 |
+| `hikari-tweaks-<version>+1.18.2.jar` | 1.18.2 | 0.12.0 |
+| `hikari-tweaks-<version>+1.19.2.jar` | 1.19, 1.19.1, 1.19.2 | 0.13.0 |
+| `hikari-tweaks-<version>+1.19.3.jar` | 1.19.3 | 0.14.1-pre.1 |
+| `hikari-tweaks-<version>+1.19.4.jar` | 1.19.4 | 0.15.4 |
+| `hikari-tweaks-<version>+1.20.1.jar` | 1.20, 1.20.1 | 0.16.3 |
+| `hikari-tweaks-<version>+1.20.2.jar` | 1.20.2 | 0.17.0 |
+| `hikari-tweaks-<version>+1.20.4.jar` | 1.20.3, 1.20.4 | 0.18.4-alpha.1 |
+| `hikari-tweaks-<version>+1.20.6.jar` | 1.20.5, 1.20.6 | 0.19.2 |
+| `hikari-tweaks-<version>+1.21.1.jar` | 1.21, 1.21.1 | 0.21.10 |
+| `hikari-tweaks-<version>+1.21.3.jar` | 1.21.2, 1.21.3 | 0.22.8 |
+| `hikari-tweaks-<version>+1.21.4.jar` | 1.21.4 | 0.23.5 |
+| `hikari-tweaks-<version>+1.21.5.jar` | 1.21.5 | 0.24.3 |
+| `hikari-tweaks-<version>+1.21.8.jar` | 1.21.6, 1.21.7, 1.21.8 | 0.25.7 |
+| `hikari-tweaks-<version>+1.21.10.jar` | 1.21.9, 1.21.10 | 0.26.8 |
+| `hikari-tweaks-<version>+1.21.11.jar` | 1.21.11 | 0.27.17 |
 
 Recommended (optional):
 
@@ -338,7 +392,15 @@ incorporates it by reference, so both texts ship with this project:
 - [COPYING.LESSER](COPYING.LESSER) — GNU Lesser General Public License v3
 - [COPYING](COPYING) — GNU General Public License v3
 
-Both are also bundled in `META-INF/` inside every published jar, together with `NOTICE`.
+Both are also bundled in `META-INF/` inside every published jar, together with `NOTICE`,
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt) and [licenses/](licenses).
+
+Every published jar also embeds [Gson](https://github.com/google/gson) 2.10.1 under
+`META-INF/jars/` via Fabric's jar-in-jar mechanism. It is embedded unmodified and stays
+under its own **Apache License 2.0** — Copyright (C) 2008-2021 Google Inc. and
+Copyright (C) 2017-2018 The Gson authors. The full license text ships as
+[licenses/Apache-2.0.txt](licenses/Apache-2.0.txt), and the per-library detail is in
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 
 ---
 

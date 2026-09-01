@@ -125,11 +125,22 @@ tasks.processResources {
 // リポジトリに置くだけでは jar だけを受け取った人には届かないので、
 // 全ターゲットの jar へ META-INF/ として同梱する。
 // NOTICE も入れる（AST-Tweaks は Apache-2.0 で、4(d) が配布物への NOTICE 同梱を求めているため）。
+//
+// さらに gson を include(...) で jar-in-jar 同梱しているため
+//（META-INF/jars/gson-2.10.1.jar）、Apache-2.0 の 4(a)(b) が求める
+// 「ライセンス本文の添付」と「著作権表示の保持」も jar に乗せる。
+// gson の jar は自分の LICENSE / NOTICE を持たないので、
+// THIRD-PARTY-NOTICES.txt と licenses/Apache-2.0.txt がその役割を担う。
+// LGPL-3.0 の成果物に Apache-2.0 のライブラリを同梱するのは普通の構成で、
+// ここでやっているのは帰属表示を配布物に同行させることだけ。
+//
 // remapJar は jar の中身をそのまま引き継ぐので、ここで入れれば配布 jar にも残る。
 tasks.jar {
     from(rootProject.file("COPYING.LESSER")) { into("META-INF") }
     from(rootProject.file("COPYING")) { into("META-INF") }
     from(rootProject.file("NOTICE")) { into("META-INF") }
+    from(rootProject.file("THIRD-PARTY-NOTICES.txt")) { into("META-INF") }
+    from(rootProject.file("licenses")) { into("META-INF/licenses") }
 }
 
 tasks.register<Copy>("buildAndCollect") {
