@@ -4,7 +4,7 @@
 
 # Hikari-Tweaks
 
-[![License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://github.com/HikariServerDev/Hikari-Tweaks/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://github.com/HikariServerDev/Hikari-Tweaks/blob/main/COPYING.LESSER)
 [![Modrinth](https://img.shields.io/modrinth/dt/hikari-tweaks?label=Modrinth%20Downloads)](https://modrinth.com/mod/hikari-tweaks)
 
 </div>
@@ -118,4 +118,4 @@ Minecraft のバージョン群ごとに 1 つの jar を配布しています�
 
 Copyright (C) 2025-2026 Hikari Server
 
-詳細は同梱の `LICENSE` を参照してください。参照している第三者プロジェクトはそれぞれ独自のライセンスに従います（`NOTICE` 参照）。
+詳細は同梱の `COPYING.LESSER`（LGPL-3.0）と `COPYING`（GPL-3.0）を参照してください。参照している第三者プロジェクトはそれぞれ独自のライセンスに従います（`NOTICE` 参照）。

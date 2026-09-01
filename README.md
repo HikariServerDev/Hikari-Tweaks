@@ -33,14 +33,31 @@
 
 ### 1.3 Hotbar Auto-Restock
 
-- When you open a **real container block** (chest, barrel, shulker box, hopper...), automatically restocks specified items from the container into your hotbar
-- Deliberately does **not** fire for chest minecarts/boats, ender chests, or plugin-driven menus (shops, virtual storage). Those are indistinguishable from real containers on the client, and clicking a shop's buttons by mistake would cost you real resources, so this fails closed
+- When you open a **real container block**, automatically restocks the items on your restock list from that container into your hotbar
 - Toggleable (hotkey supported)
+- Detection deliberately fails closed. Restocking only runs when **all** of the following hold:
+  1. Your crosshair is on a block that the client knows has a block entity, and that block entity holds an inventory
+  2. That block entity is not an ender chest
+  3. The number of container slots in the open screen equals that block entity's inventory size — a chest (and only a chest) may also be exactly double, so double chests work
+
+What that means in practice:
+
+| Opened by | Restocks? | Why |
+|---|---|---|
+| Chest / trapped chest, single or double | Yes | Real block entity; a chest is allowed to be exactly 2x its own size |
+| Barrel, shulker box **placed as a block** | Yes | Real block entity, slot count matches |
+| Hopper, dispenser, dropper, furnace family, brewing stand | Yes | Same rule — any block entity whose inventory size matches the screen qualifies |
+| Ender chest | No | Excluded explicitly: its contents are per-player and servers often swap them out |
+| Chest / hopper minecart, chest boat, villager trading | No | Entities, not block entities — there is no block entity under the crosshair |
+| Crafting table, enchanting table, anvil | No | No block entity holding an inventory |
+| Your own inventory screen | No | Rejected before detection runs |
+| Plugin menu opened by a command, an NPC or an item | No | Nothing under the crosshair to confirm it against |
+| Plugin menu opened by right-clicking a real container, **with a matching slot count** | Yes — not detectable | Identical to the real block from the client's point of view; see below |
+
+Caveat: the slot-count check catches the common mismatch (right-clicking a 27-slot chest and getting a 54-slot shop GUI), but a virtual GUI that happens to use exactly the size of the block it was opened from cannot be told apart on the client. On servers with chest-backed menus, keep the restock list narrow.
 
 Notes:
 
-- Doesn't run on the player inventory screen
-- Doesn't run when opening an ender chest
 - Automatically closes the screen after restocking
 
 ### 1.4 Totem of Undying Auto-Restock
@@ -49,7 +66,7 @@ Notes:
 - Adjusted so normal slot switches don't trigger it
 - Toggleable (hotkey supported)
 
-### 1.7 Hand Auto-Restock (new in v1.0.6)
+### 1.5 Hand Auto-Restock (new in v1.0.6)
 
 - When any hotbar item drops to **5 or fewer**, automatically restocks from your inventory
 - Behaves like Tweakeroo's handrestock; the target list is managed in the **Hand Restock List** on the Lists tab
@@ -65,6 +82,22 @@ Notes:
 - Header / body / text / score / self-highlight colors adjustable in ARGB
 - Toggle for server total (Total) display
 - Player management tab (block-toggle for display)
+- Score numbers animate smoothly instead of jumping (see 1.7)
+
+### 1.7 Smooth Score Animation (custom HUD)
+
+Numbers on the custom scoreboard HUD ease towards their new value instead of jumping.
+This is done entirely on the client by this mod — no extra data is sent over the network
+for it, and the server-side smoother that used to do this was removed — so **scores only
+animate for players who have Hikari-Tweaks installed**.
+
+- Always on; there is no config option. One was deliberately removed: at the current update rate the steps are almost always +1, and an integer display has nothing to draw between N and N+1, so the toggle made no visible difference either way
+- Real-time exponential easing (time constant ~0.12 s), so the speed is the same at any frame rate. If more than 0.5 s passes between frames (window unfocused, world loading) the value snaps straight to the real one instead of replaying the animation
+- Applies to the ranking rows **and** to the server total line
+- Only the displayed digits are eased. Sorting and ranks always come from the real values, so rows never swap places mid-animation
+- A row that has just appeared (new entry, or turning to a page you were not looking at) shows its real value immediately — it never counts up from zero
+- Requires the v2 ranking protocol. A server still sending the v1 packet gets exact values with no animation, because v1 rows carry no UUID to track a row by
+- The animation state is dropped when the board switches to a different statistic, so you never see a count-down between two unrelated numbers
 
 ---
 
@@ -177,7 +210,8 @@ Recommended (optional):
 
 Receive:
 
-- `hikariscoreboard:ranking_data`
+- `hikariscoreboard:ranking_v2` — the delta ranking protocol; used whenever the server supports it
+- `hikariscoreboard:ranking_data` — the older full-snapshot protocol, kept for servers still on it
 - `hikariscoreboard:player_list_response`
 
 Send:
@@ -257,10 +291,13 @@ targets) use Stonecutter comment branches. See `docs/multiversion/PLAN.md` for t
 
 Copyright (C) 2025-2026 Hikari Server
 
+LGPL-3.0 is written as a set of additional permissions layered on top of GPL-3.0 and
+incorporates it by reference, so both texts ship with this project:
 
-See the bundled [LICENSE](LICENSE) file and the following URLs for details:
-- https://www.gnu.org/licenses/lgpl-3.0.txt
-- https://www.gnu.org/licenses/gpl-3.0.txt
+- [COPYING.LESSER](COPYING.LESSER) — GNU Lesser General Public License v3
+- [COPYING](COPYING) — GNU General Public License v3
+
+Both are also bundled in `META-INF/` inside every published jar, together with `NOTICE`.
 
 ---
 

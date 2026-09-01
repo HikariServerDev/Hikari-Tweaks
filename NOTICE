@@ -2,6 +2,25 @@ Hikari-Tweaks
 Copyright (C) 2025-2026 Tamago0314
 Licensed under the GNU Lesser General Public License v3 (LGPL-3.0-or-later).
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+LGPL-3.0 is written as a set of additional permissions on top of GPL-3.0 and
+incorporates it by reference, so both texts are distributed with this project:
+
+  COPYING.LESSER   GNU Lesser General Public License v3 (verbatim)
+  COPYING          GNU General Public License v3 (verbatim)
+
+You should have received a copy of both along with this program.
+If not, see <https://www.gnu.org/licenses/>.
+
 Developed at Hikari Server (光鯖) — a Minecraft Java Edition community.
   https://hikariserver.com
 

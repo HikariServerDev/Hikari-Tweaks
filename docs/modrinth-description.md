@@ -4,7 +4,7 @@
 
 # Hikari-Tweaks
 
-[![License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://github.com/HikariServerDev/Hikari-Tweaks/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://github.com/HikariServerDev/Hikari-Tweaks/blob/main/COPYING.LESSER)
 [![Modrinth](https://img.shields.io/modrinth/dt/hikari-tweaks?label=Modrinth%20Downloads)](https://modrinth.com/mod/hikari-tweaks)
 
 </div>
@@ -117,4 +117,4 @@ Developed at: **[Hikari Server (光鯖)](https://hikariserver.com)** — a Minec
 
 Copyright (C) 2025-2026 Hikari Server
 
-See the bundled `LICENSE` file for details. Referenced third-party projects retain their own licenses (see `NOTICE`).
+See the bundled `COPYING.LESSER` (LGPL-3.0) and `COPYING` (GPL-3.0) files for details. Referenced third-party projects retain their own licenses (see `NOTICE`).

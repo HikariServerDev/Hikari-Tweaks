@@ -114,16 +114,16 @@ the following:
        Version.
 
    e) Provide Installation Information, but only if you would otherwise
-   be required to provide such information under section 6 of the GNU
-   GPL, and only to the extent that such information is necessary to
-   install and execute a modified version of the Combined Work
-   produced by recombining or relinking the Application with a
-   modified version of the Linked Version. (If you use option 4d0,
-   the Installation Information must accompany the Minimal
-   Corresponding Source and Corresponding Application Code. If you
-   use option 4d1, you must provide the Installation Information in
-   the manner specified by section 6 of the GNU GPL for conveying
-   Corresponding Source.)
+   be required to provide such information under section 6 of the
+   GNU GPL, and only to the extent that such information is
+   necessary to install and execute a modified version of the
+   Combined Work produced by recombining or relinking the
+   Application with a modified version of the Linked Version. (If
+   you use option 4d0, the Installation Information must accompany
+   the Minimal Corresponding Source and Corresponding Application
+   Code. If you use option 4d1, you must provide the Installation
+   Information in the manner specified by section 6 of the GNU GPL
+   for conveying Corresponding Source.)
 
   5. Combined Libraries.
 
@@ -163,25 +163,3 @@ whether future versions of the GNU Lesser General Public License shall
 apply, that proxy's public statement of acceptance of any version is
 permanent authorization for you to choose that version for the
 Library.
-
-
-===============================================================================
-
-Hikari-Tweaks — a Minecraft Fabric client-side utility mod
-Copyright (C) 2025-2026 Tamago0314
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-The GNU Lesser General Public License references the GNU General Public
-License. You can obtain the full text of both licenses at:
-
-  https://www.gnu.org/licenses/lgpl-3.0.txt
-  https://www.gnu.org/licenses/gpl-3.0.txt
