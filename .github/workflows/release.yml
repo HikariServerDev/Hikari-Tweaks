@@ -4,9 +4,20 @@ on:
   push:
     tags:
       - 'v*'
+  # すでに GitHub Release があるタグを、あとから Modrinth へ上げるための手動起動。
+  # v1.2.3 は Modrinth 連携を入れる前に出したので、これで上げる。
+  # 普段のリリースでは使わない（タグを push すれば modrinth ジョブまで流れる）。
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Modrinth へ上げるタグ（例: v1.2.3）。GitHub Release が作成済みであること'
+        required: true
+        type: string
 
 jobs:
   release:
+    # 手動起動のときは GitHub Release を作り直さない
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -53,3 +64,64 @@ jobs:
           name: "Hikari-Tweaks v${{ steps.version.outputs.version }}"
           files: build/libs/${{ steps.version.outputs.version }}/*.jar
           generate_release_notes: true
+
+  # Modrinth に何が上がるかを表示するだけのジョブ。トークンは渡さない。
+  # 次の modrinth ジョブは承認待ちで止まるので、承認ボタンを押す前にここのログで中身を確かめる。
+  modrinth-preview:
+    needs: release
+    # 手動起動では release が skipped になるので、失敗・中止でなければ走らせる
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # ★ タグは必ず環境変数を経由して "$TAG" で使う。手動起動の入力を
+      #   ${{ }} で run: に直接埋め込むと、入力値がシェルとして解釈されうる。
+      TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # ビルドし直さず、GitHub Release に添付した（verify-jars.py を通った）jar をそのまま使う
+      - name: Download jars from the GitHub Release
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.jar' --dir jars
+
+      - name: Show what will be uploaded
+        run: python scripts/publish-modrinth.py --tag "$TAG" --jar-dir jars --dry-run
+
+  modrinth:
+    needs: modrinth-preview
+    # ★ 条件を明示すること。既定の success() は依存の依存まで遡って見るので、
+    #   手動起動で release が skipped だとこのジョブまで飛ばされてしまう。
+    if: ${{ !failure() && !cancelled() && needs.modrinth-preview.result == 'success' }}
+    runs-on: ubuntu-latest
+    # ★ Environment「modrinth」は Tamago0314 の承認が必要。承認されるまでジョブは始まらない。
+    #   MODRINTH_TOKEN はこの Environment にだけ置いてあり（権限は Create versions のみ）、
+    #   v* タグと main から起動したジョブしか使えない。
+    environment: modrinth
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Download jars from the GitHub Release
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.jar' --dir jars
+
+      # 同じバージョン番号が Modrinth に既にあれば飛ばすので、失敗したら再実行してよい
+      - name: Upload to Modrinth
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: python scripts/publish-modrinth.py --tag "$TAG" --jar-dir jars
