@@ -19,6 +19,23 @@
 
 ## Changelog
 
+### v1.2.3
+
+- **Changed: the durability warning now fires every time you use a nearly broken item**
+  Up to v1.2.2 the warning fired only once — at the moment an item entered the warning state,
+  which the message showed as `2%` — and then stayed silent however much further you wore the
+  item down. It now warns again on every point of durability lost for as long as the item stays
+  at 1% or lower, so mining with a nearly broken pickaxe warns on every block. Durability going
+  back **up** (Mending) still does not warn.
+- **Fixed: carrying two of the same unnamed tool tracked only one of them**
+  Using the other one never warned. Each slot is now tracked separately. As a trade-off, moving
+  a nearly broken item to another slot warns once.
+- Changed: the warning sound plays at most once per tick, so a full set of nearly broken armour
+  taking a hit no longer stacks four sounds on top of each other. The chat still lists every item.
+- Fixed: the warning state carried over when switching servers, which could leave a nearly broken
+  tool silent on the next server
+- These changes apply to every Minecraft version (1.17.1 - 1.21.11) alike.
+
 ### v1.2.1
 
 - **Fixed: all text in the config screens was invisible on Minecraft 1.21.6 and newer**
