@@ -11,14 +11,14 @@
 
 **A client-side Fabric utility mod for Minecraft 1.17.1 - 1.21.11**, developed at [Hikari Server (光鯖)](https://hikariserver.com). Provides a fully customizable custom scoreboard HUD (paired with HikariScoreBoard) plus a set of quality-of-life features.
 
-## What changed in 1.2.1
+## What changed in 1.2.3
 
-**All text in this mod's config screens was invisible on Minecraft 1.21.6 and newer.** 1.21.6
-stopped filling in the alpha channel of text colours and now discards any text drawn with an
-alpha of 0, so the player names, type labels, group headers and captions in the config screens
-were never drawn at all. The in-game HUD was unaffected. If you play Minecraft 1.21.6 - 1.21.11
-and run v1.1.0 or v1.2.0 — the `+1.21.8`, `+1.21.10` and `+1.21.11` jars — update to v1.2.1.
-Nothing changes on 1.21.5 and older.
+**The durability warning now fires every time you use a nearly broken item.** Up to v1.2.2 it
+fired only once — at the moment an item dropped to 1% durability, which the message showed as
+`2%` — and then stayed silent however much further you wore the item down. It now warns on every
+point of durability lost for as long as the item stays at 1% or lower. Each slot is tracked
+separately, so carrying two of the same tool warns for both, and durability going back up through
+Mending stays silent. This applies to every Minecraft version alike.
 
 ## Features
 
