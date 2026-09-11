@@ -12,12 +12,12 @@ import net.minecraft.sound.SoundCategory;
 // 耐久値 1% 警告ハンドラ。
 // Mixin を使わず ClientTickEvents から呼ぶことで refMap 問題を回避。
 //
-// 警告は「アイテムが警告状態（残り耐久 <= 1%）に**入った瞬間**」に 1 回だけ出し、
-// 「警告状態から**出た**とき」だけ再武装する。判定そのものは MC 非依存の
+// 警告は「アイテムが警告状態（残り耐久 <= 1%）にあるあいだ、耐久が**減るたび**」に出す。
+// 修繕で耐久が**戻った**ときは出さない。判定そのものは MC 非依存の
 // DurabilityWarningState が持っている（ユニットテスト付き）。
 public final class DurabilityWarningHandler {
 
-    // 「1 回だけ」を担保する状態機械
+    // 「どのスロットの、どのアイテムが、前回いくつ削れていたか」を覚える状態機械
     private static final DurabilityWarningState STATE = new DurabilityWarningState();
 
     // インスタンス化を禁止するプライベートコンストラクタ
@@ -36,6 +36,13 @@ public final class DurabilityWarningHandler {
 
         STATE.beginTick();
 
+        // ★ サウンドは 1 tick に最大 1 回。チャットは全件出す。
+        //   防具は 1 回の被弾で 4 部位すべてに耐久ダメージが入るため、ほぼ壊れたフルセットで
+        //   殴られると同じ座標・同じピッチの pling が 4 重なり、位相が揃って音量が加算される。
+        //   溶岩や炎ならそれが毎秒続く。どのアイテムが警告されたかはチャットで分かるので、
+        //   音は「この tick に何か警告が出た」ことだけを伝えれば足りる。
+        boolean playedSound = false;
+
         // インベントリの全スロットを走査して耐久値を確認する
         for (int slot = 0; slot < player.getInventory().size(); slot++) {
             ItemStack stack = player.getInventory().getStack(slot);
@@ -44,21 +51,22 @@ public final class DurabilityWarningHandler {
             if (stack.isEmpty() || !stack.isDamageable()) continue;
 
             int maxDamage = stack.getMaxDamage();
-            int remaining = maxDamage - stack.getDamage();
+            int damage = stack.getDamage();
+            int remaining = maxDamage - damage;
 
             // 警告状態でなければ何もしない。
-            // このアイテムのキーは今 tick の「見えたキー」に入らないので、
-            // 直後の endTick() で再武装される（＝修理されたら次にまた警告が出る）。
-            if (!DurabilityWarningState.inWarningState(maxDamage, stack.getDamage())) continue;
+            // このスロットは今 tick の「見えたスロット」に入らないので、
+            // 直後の endTick() で記録ごと捨てられる（＝修理されたら次にまた警告が出る）。
+            if (!DurabilityWarningState.inWarningState(maxDamage, damage)) continue;
 
-            // すでに警告済みなら出さない。
-            // ★ キーにダメージ値を入れてはいけない。1 ダメージごとに別のキーになり、
-            //   最後の 1% を削り切るあいだ毎回警告が出る（v1.1.x の不具合）。
-            //   修繕でダメージが**減る**ときも通っていない値が次々できるので、
-            //   経験値を拾うたびに警告とサウンドが重なって鳴っていた。
-            if (!STATE.offer(identity(stack))) continue;
+            // 前回より削れていなければ出さない。
+            // ★ ここが「使うたびに鳴らす」の本体。ダメージが**増えた**ときだけ true になる。
+            //   修繕で耐久が戻ったときは false（記録だけ新しい値へ更新される）。
+            //   v1.1.x はキーにダメージ値そのものを入れていたため修繕でも鳴っていた。
+            //   詳しい経緯は DurabilityWarningState のクラスコメントにある。
+            if (!STATE.offer(slot, identity(stack), damage)) continue;
 
-            // 警告メッセージとサウンドを出す
+            // 警告メッセージを出す（全件）
             int percent = DurabilityWarningState.remainingPercent(remaining, maxDamage);
             player.sendMessage(
                     TextCompat.literal(
@@ -69,6 +77,10 @@ public final class DurabilityWarningHandler {
                     ),
                     false
             );
+
+            // サウンドは 1 tick 1 回だけ
+            if (playedSound) continue;
+            playedSound = true;
             // FIX⑤: ClientPlayerEntity.playSound() は MC 1.18.2 では SoundCategory 引数を取らない。
             //        world.playSound() を使ってプレイヤー位置でサウンドを再生する。
             mc.world.playSound(
@@ -81,24 +93,28 @@ public final class DurabilityWarningHandler {
             );
         }
 
-        // 今 tick に警告状態で現れなかったキーを再武装する
+        // 今 tick に警告状態で現れなかったスロットの記録を捨てる
         STATE.endTick();
     }
 
-    // 「同じアイテム」を表すキー。
+    // 記録を全部捨てる。サーバーから切断したときに HikariTweaksClient から呼ぶ。
     //
-    // ★ スロット番号を入れてはいけない。以前はスロットごとに記録していたため、
-    //   ほぼ壊れた道具をホットバー内で持ち替えたり並べ替えたりするだけで
-    //   移動先のスロットには記録が無く、そのたびに警告が出ていた。
-    // ★ ダメージ値も入れてはいけない（上の説明のとおり）。
+    // ★ これを呼ばないと記録がサーバーを跨いで残る。別のサーバーの同じスロットに、
+    //   記録より耐久の多い同種の道具があると「増えていない」と判定されて黙ってしまう。
+    //   tick() の player == null 分岐ではなく切断イベントで捨てているのは、
+    //   ディメンション移動やロード画面で一瞬 null になるたびに鳴り直すのを避けるため。
+    public static void reset() {
+        STATE.clear();
+    }
+
+    // 「同じアイテム」を表すキー。スロット番号は含めない（状態機械側がスロットをキーにしている）。
     //
-    // 採ったのは「登録 ID + 表示名」。持ち替え・並べ替えでは変わらず、
-    // 耐久値の増減でも変わらない。名前を付けた道具は別物として扱える。
+    // ★ ダメージ値を入れてはいけない。1 ダメージごとに別のキーになり、
+    //   「別のアイテムに入れ替わった」と誤判定して修繕のたびに鳴る（v1.1.x の不具合）。
+    //   耐久の増減は DurabilityWarningState 側が damage の比較で扱う。
     //
-    // 割り切り: 名前を付けていない同種の道具（無名のダイヤのつるはし 2 本）が
-    // 同時に警告状態へ入ったときは 1 回しか警告しない。バニラのアイテムには
-    // 個体を識別する ID が無く、全 17 ターゲットで安定して読める代替も無い。
-    // 「持ち替えで鳴り直す」「1 ダメージごとに鳴る」ほうが実害が大きいと判断した。
+    // 採ったのは「登録 ID + 表示名」。耐久値の増減では変わらず、名前を付けた道具は別物として
+    // 扱える。同じスロットの中身が別のアイテムに差し替わったことの検出にも使う。
     private static String identity(ItemStack stack) {
         return RegistryCompat.itemId(stack.getItem()) + "|" + stack.getName().getString();
     }

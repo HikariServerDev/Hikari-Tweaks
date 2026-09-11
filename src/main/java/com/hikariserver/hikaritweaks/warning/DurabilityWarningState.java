@@ -1,38 +1,61 @@
 package com.hikariserver.hikaritweaks.warning;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
-// 耐久値警告の「1 回だけ出す」状態機械。
+// 耐久値警告の状態機械。
 //
-// ★ MC 非依存。ItemStack を持ち込まず String のキーだけで動かすことで
+// ★ MC 非依存。ItemStack を持ち込まず「スロット番号 + 同一性キー + ダメージ値」だけで動かし、
 //   Minecraft を起動しないユニットテストに載せている。
-//   キーの作り方（＝「同じアイテム」の定義）は DurabilityWarningHandler 側の責務。
-//
-// ── なぜ状態機械が要るのか ────────────────────────────────────────────
-// 以前の実装はスロット番号 → "アイテム|ダメージ値" の署名を持ち、
-// 署名が変わるたびに警告していた。ダメージ値が署名に入っているせいで
-//   ・ダイヤのつるはし（最大 1561・閾値 16）は最後の 16 回の使用で 16 回警告する
-//   ・修繕（Mending）で耐久が**戻る**と、通り過ぎていない新しい署名が次々できるので
-//     経験値を拾うたびに警告が飛ぶ
-// という壊れ方をしていた。「1 スロット 1 署名につき 1 回」という当時のコメントは
-// 実際の挙動と逆のことを書いていた。
+//   同一性キーの作り方（＝「同じアイテム」の定義）は DurabilityWarningHandler 側の責務。
 //
 // ── いまの規則 ────────────────────────────────────────────────────────
-// 「警告状態（残り耐久 <= 閾値）に**入った瞬間**に 1 回だけ警告する。
-//   警告状態から**本当に出た**ときだけ再武装する。」
-// 警告状態から出るのは次の 2 通りだけ。
-//   ・修理されて残り耐久が閾値を超えた
-//   ・そのアイテムがインベントリから無くなった（壊れた・預けた・捨てた）
-// どちらも「そのキーが今 tick の走査に現れない」ことで検出できるので、
-// 毎 tick 「今回見えたキー」を集めて、見えなかったキーを捨てる形にしている。
+// 「警告状態（残り耐久 <= 閾値）のあいだ、そのアイテムの耐久が**減るたび**に警告する。
+//   耐久が**戻った**（修繕）ときは警告しないが、記録は新しい値へ更新する。」
+// 警告状態から出る（修理されて閾値を超えた／インベントリから無くなった）と記録ごと捨てる。
+// どちらも「そのスロットが今 tick の走査に現れない」ことで検出できるので、
+// 毎 tick 「今回見えたスロット」を集めて、見えなかったスロットを捨てる形にしている。
 // これは ValueInterpolator.endFrame() と同じ作りである。
+//
+// ── ★ v1.1.x の不具合との違い（消さないこと）──────────────────────────
+// 「最後の 1% を削るあいだ毎 tick 鳴る」は v1.1.x では**不具合**として修正された挙動で、
+// v1.2.3 で**仕様として**復活させたものである。何が違うのか:
+//   ・v1.1.x: キーに**ダメージ値そのもの**が入っていた。署名が 1 ダメージごとに変わるので
+//     「初めて見た署名か」でしか判定できず、修繕で耐久が**戻る**ときも通っていない署名が
+//     次々できて、経験値を拾うたびに警告が飛んでいた。
+//   ・いま: ダメージを**前回値と比較**し、**増えたときだけ**鳴らす。減少では鳴らない。
+// つまり「1 ダメージごとに鳴る」こと自体は意図した挙動であり、直してはいけない。
+// 直してよいのは「修繕で鳴る」ほうだけである。
+//
+// ── ★ スロット番号をキーにしている理由（消さないこと）──────────────────
+// v1.1.x〜v1.2.2 は「登録 ID + 表示名」だけをキーにしていた。持ち替えで鳴り直さない利点が
+// あったが、無名の同種の道具を 2 本持つと 1 本しか追跡できず、**もう 1 本を使っても鳴らない**。
+// 「使うたびに鳴らす」が前提になった以上こちらの実害が大きいので、スロット番号をキーにした。
+// 代償として、道具を別スロットへ移すと 1 回だけ余分に鳴る（意図した代償）。
+//
+// 同一性キーを文字列に連結せず「スロットをキー・同一性キーを値」にしているのは、
+// スロットの中身が別個体に入れ替わったのを検出するため。連結方式だと、
+// スロット 0 の記録が damage 1550 のときに damage 1548 の別のつるはしをそこへ入れると
+// 1548 > 1550 が偽になり、**一度も鳴らないまま壊れる**。
 public final class DurabilityWarningState {
 
-    // 警告済みのキー。次に警告状態へ入り直すまで再警告しない。
-    private final Set<String> warned = new HashSet<>();
-    // 今 tick の走査で警告状態だったキー
-    private final Set<String> seenThisTick = new HashSet<>();
+    // 1 スロット分の記録
+    private static final class Entry {
+        final String identity;
+        final int damage;
+
+        Entry(String identity, int damage) {
+            this.identity = identity;
+            this.damage = damage;
+        }
+    }
+
+    // 追跡中のスロット。警告状態から出た（＝今 tick 現れなかった）ら捨てる。
+    private final Map<Integer, Entry> tracked = new HashMap<>();
+    // 今 tick の走査で警告状態だったスロット
+    private final Set<Integer> seenThisTick = new HashSet<>();
 
     // インベントリ走査を始める前に呼ぶ
     public void beginTick() {
@@ -41,36 +64,47 @@ public final class DurabilityWarningState {
 
     // 警告状態のアイテムを見つけるたびに呼ぶ。
     //
-    // @return 今回はじめて警告状態に入ったキーなら true（＝警告を出す）。
-    //         すでに警告済みなら false。
-    //         同じ tick 内で同じキーを 2 回渡しても警告は 1 回だけになる
-    //         （同種のほぼ壊れた道具を 2 本持っているケース）。
-    public boolean offer(String key) {
-        seenThisTick.add(key);
-        return warned.add(key);
+    // @param slot     インベントリのスロット番号
+    // @param identity 「同じアイテム」を表すキー（DurabilityWarningHandler.identity()）
+    // @param damage   そのアイテムの現在のダメージ値（大きいほど壊れている）
+    // @return 警告を出すべきなら true。
+    //         ・そのスロットを新しく追跡し始めた（＝警告状態に入った）
+    //         ・スロットの中身が別のアイテムに入れ替わった
+    //         ・ダメージが増えた（＝使われた）
+    //         のいずれか。ダメージが減った（修繕）／変わっていないときは false。
+    public boolean offer(int slot, String identity, int damage) {
+        // 同じ tick に同じスロットを 2 回渡されても 1 回しか警告しない。
+        // 走査は 1 スロット 1 回なので本来起きないが、記録が二重更新されると
+        // 「増えた」の判定が壊れるため防御的に弾いている。
+        if (!seenThisTick.add(slot)) return false;
+
+        Entry prev = tracked.put(slot, new Entry(identity, damage));
+        if (prev == null) return true;                      // 新しく警告状態へ入った
+        if (!prev.identity.equals(identity)) return true;   // 別の個体に入れ替わった
+        return damage > prev.damage;                        // 増えた＝使われた
     }
 
     // インベントリ走査を終えたら呼ぶ。
-    // 今 tick に現れなかったキー（修理された・無くなった）を再武装する。
-    // 呼ばないと warned が単調増加して二度と警告が出なくなる。
+    // 今 tick に現れなかったスロット（修理された・無くなった）の記録を捨てる。
+    // 呼ばないと tracked が単調増加し、古いダメージ値が残って警告が出なくなる。
     public void endTick() {
-        warned.retainAll(seenThisTick);
+        tracked.keySet().retainAll(seenThisTick);
     }
 
-    // 全状態を捨てる（機能を無効化したときなど）
+    // 全状態を捨てる（機能を無効化したとき・サーバーから切断したとき）
     public void clear() {
-        warned.clear();
+        tracked.clear();
         seenThisTick.clear();
     }
 
-    // そのキーが警告済みかどうか（テスト用）
-    public boolean isWarned(String key) {
-        return warned.contains(key);
+    // そのスロットを追跡中かどうか（テスト用）
+    public boolean isTracked(int slot) {
+        return tracked.containsKey(slot);
     }
 
-    // 警告済みキーの数（テスト用）
-    public int warnedCount() {
-        return warned.size();
+    // 追跡中のスロット数（テスト用）
+    public int trackedCount() {
+        return tracked.size();
     }
 
     // ── 閾値まわりの純関数 ────────────────────────────────────────────

@@ -82,7 +82,9 @@ For releases before v1.1.0 — Minecraft 1.18.2 only — see the
 ### 1.2 Durability 1% Warning
 
 - When a durable item drops to 1% or lower, notifies via chat + sound
-- Suppresses duplicate notifications for the same item state
+- While in the warning state, warns again **every time you use the item** (every point of durability lost)
+- Stays silent when durability goes back **up** (Mending)
+- Tracks each slot separately, so carrying two of the same tool warns for both
 - Toggleable (hotkey supported)
 
 ### 1.3 Hotbar Auto-Restock

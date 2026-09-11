@@ -35,7 +35,7 @@ Nothing changes on 1.21.5 and older.
 
 ### Durability Warning
 
-> Warns via chat notification and sound when a damageable item drops to 1% durability or lower. Every slot of your inventory is checked, not just the item in your hand. The warning fires once when an item enters the warning state and re-arms only after it leaves it, so repairing and re-damaging warns again while grinding down the last percent does not spam. Config key `durabilityWarningEnabled` (**Tweaks** tab, on by default).
+> Warns via chat notification and sound when a damageable item drops to 1% durability or lower. Every slot of your inventory is checked, not just the item in your hand. While an item is in the warning state, it warns again **every time you use it** — every point of durability lost. It stays silent when durability goes back **up** (Mending). Each slot is tracked independently, so carrying two of the same tool warns for both (moving a tool to another slot costs one extra warning). The sound plays at most once per tick, so a full set of nearly broken armour will not stack the sound. Config key `durabilityWarningEnabled` (**Tweaks** tab, on by default).
 <br><br>
 
 ### Hotbar Auto-Restock

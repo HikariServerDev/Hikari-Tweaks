@@ -68,6 +68,10 @@ public class HikariTweaksClient implements ClientModInitializer {
             //   直に clear すると描画中の反復と衝突しうる。
             //   （実行されずに終わっても、次の JOIN で必ず reset される）
             client.execute(RankingV2Client::reset);
+            // 耐久値警告の記録も捨てる。残すと次のサーバーの同じスロットに
+            // 記録より耐久の多い同種の道具があったとき「増えていない」と判定されて黙る。
+            // 同じ理由で client.execute で MC スレッドへ回す（HashMap を持っている）。
+            client.execute(DurabilityWarningHandler::reset);
         });
 
         // サーバー参加時の初期化とバージョン通知
@@ -75,6 +79,9 @@ public class HikariTweaksClient implements ClientModInitializer {
             ScoreboardPacketClient.resetHiddenState();
             RankingV2Client.reset();
             ScoreboardHudRenderer.resetPage();
+            // DISCONNECT 側の client.execute が実行されずに終わっても、
+            // ここで必ず白紙から始まるようにしておく。
+            DurabilityWarningHandler.reset();
             // プレイヤーが存在するときのみバージョン通知メッセージを送信する
             if (client.player != null) {
                 client.player.sendMessage(
