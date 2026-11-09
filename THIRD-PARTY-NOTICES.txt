@@ -1,0 +1,74 @@
+Hikari-Tweaks — Third-Party Notices
+===================================
+
+Hikari-Tweaks itself is distributed under the GNU Lesser General Public License
+v3 or later (LGPL-3.0-or-later). Its own code and resources are covered by the
+accompanying `COPYING.LESSER` (LGPL-3.0) and `COPYING` (GPL-3.0), which LGPL-3.0
+incorporates by reference. Those terms cover Hikari-Tweaks' own code and
+resources only.
+
+The distributed jar additionally embeds the third-party library listed below
+under `META-INF/jars/` using Fabric's jar-in-jar mechanism. It is embedded
+**unmodified, as its own complete jar**, and remains under its own license.
+Nothing below is relicensed by Hikari-Tweaks' own license.
+
+Full license texts referenced here are shipped alongside this file:
+
+    licenses/Apache-2.0.txt   Apache License, Version 2.0
+
+The list matches the `include(...)` declarations in `build.gradle.kts`. It is
+identical for all seventeen per-Minecraft-version jars.
+
+
+--------------------------------------------------------------------------
+1. Gson
+--------------------------------------------------------------------------
+    Version:      2.10.1
+    Coordinates:  com.google.code.gson:gson:2.10.1
+    Embedded as:  META-INF/jars/gson-2.10.1.jar
+    Homepage:     https://github.com/google/gson
+    License:      Apache License 2.0 — see licenses/Apache-2.0.txt
+
+    Copyright (C) 2008-2021 Google Inc.
+    Copyright (C) 2017-2018 The Gson authors
+
+    One file in the library, `com/google/gson/internal/LinkedTreeMap.java`,
+    carries a further copyright line in the upstream sources:
+
+        Copyright (C) 2010 The Android Open Source Project
+
+    Used by Hikari-Tweaks to read and write `config/hikari-tweaks.json`.
+
+    Facts about how it is distributed here:
+
+      * It is embedded verbatim, as its own separate jar. Every entry is
+        byte-identical to the artifact published on Maven Central; the only
+        addition is the `fabric.mod.json` that Fabric Loom generates so the
+        loader can mount the nested jar. It is not shaded, repackaged, merged
+        into Hikari-Tweaks classes, or otherwise modified.
+      * The Maven Central artifact carries no LICENSE or NOTICE file of its
+        own, and the upstream repository has a LICENSE but no NOTICE file.
+        This file and `licenses/Apache-2.0.txt` are what carry the attribution
+        and the license text with the redistributed copy.
+      * The corresponding source for this exact version is published on Maven
+        Central as `com.google.code.gson:gson:2.10.1:sources`, downloadable
+        from https://repo1.maven.org/maven2/com/google/code/gson/gson/2.10.1/
+
+    Minecraft ships its own copy of Gson as well. This mod nonetheless
+    declares `include("com.google.code.gson:gson:...")` in `build.gradle.kts`,
+    so the version it is compiled against travels inside the jar.
+
+
+--------------------------------------------------------------------------
+Notes
+--------------------------------------------------------------------------
+  * Minecraft, Yarn mappings, Fabric Loader and Fabric API are not embedded;
+    they are provided by the game the mod runs in.
+  * MaLiLib, MiniHUD and Mod Menu are not embedded either. They are separate
+    mods the player installs, and they keep their own licenses.
+  * `NOTICE` also lists the projects Hikari-Tweaks takes code or design
+    references from. Those are references, not embedded binaries, and are not
+    repeated here.
+  * When the bundled library's version changes in `stonecutter.properties.toml`
+    or `build.gradle.kts`, update this file in the same commit. It is copied
+    into every jar's `META-INF/` by the `tasks.jar` block in `build.gradle.kts`.

@@ -1,0 +1,83 @@
+Hikari-Tweaks
+Copyright (C) 2025-2026 HikariServerDev
+Licensed under the GNU Lesser General Public License v3 (LGPL-3.0-or-later).
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+LGPL-3.0 is written as a set of additional permissions on top of GPL-3.0 and
+incorporates it by reference, so both texts are distributed with this project:
+
+  COPYING.LESSER   GNU Lesser General Public License v3 (verbatim)
+  COPYING          GNU General Public License v3 (verbatim)
+
+You should have received a copy of both along with this program.
+If not, see <https://www.gnu.org/licenses/>.
+
+Developed at Hikari Server (光鯖) — a Minecraft Java Edition community.
+  https://hikariserver.com
+
+------------------------------------------------------------------------
+Maintainer
+------------------------------------------------------------------------
+
+  Tamago0314  (https://github.com/Tamago0314)
+
+------------------------------------------------------------------------
+Bundled Third-Party Libraries
+------------------------------------------------------------------------
+
+This mod bundles the following third-party library inside every published jar,
+under META-INF/jars/, using Fabric's jar-in-jar mechanism. It is embedded
+unmodified and remains under its own license.
+
+  Gson
+    Copyright (C) 2008-2021 Google Inc.
+    Copyright (C) 2017-2018 The Gson authors
+    Licensed under the Apache License, Version 2.0
+    https://github.com/google/gson
+
+The exact version, the full copyright notices and the complete license text
+are in THIRD-PARTY-NOTICES.txt and licenses/Apache-2.0.txt, both of which ship
+in the same META-INF/ directory as this file.
+
+------------------------------------------------------------------------
+Third-Party References
+------------------------------------------------------------------------
+
+This product includes code and design references from the following projects.
+These acknowledgements are provided for attribution purposes; each referenced
+project remains under its own license as noted below.
+
+------------------------------------------------------------------------
+AST-Tweaks by Sim-hu / ASTRAL-SMP
+Licensed under the Apache License, Version 2.0
+https://github.com/ASTRAL-SMP/AST-Tweaks
+
+  PositionEditorScreen is based on the implementation in this project.
+  The class structure, drag-and-drop detection logic, and scale slider
+  design are derived from AST-Tweaks' PositionEditorScreen.
+
+------------------------------------------------------------------------
+ama-tweaks by pugur
+Licensed under the MIT License
+https://github.com/pugur523/ama-tweaks
+
+  The design concept of the hotbar auto-restock feature (triggered on
+  container open) is inspired by this work.
+
+------------------------------------------------------------------------
+MaLiLib, MiniHUD, Tweakeroo by masa (fi.dy.masa)
+Licensed under the GNU Lesser General Public License v3 (LGPLv3)
+https://github.com/maruohon/
+
+  MaLiLib API is used for config, hotkey, and GUI management.
+  MiniHUD OverlayRenderer is patched via Mixin for beacon range fix.
+  HandRestock design is inspired by Tweakeroo's handrestock feature.

@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "package": "com.hikariserver.hikaritweaks.mixin",
+  "compatibilityLevel": "${java}",
+  "refmap": "hikari-tweaks.refmap.json",
+  "client": [
+    "MixinOverlayRenderer",
+    "MixinInGameHud",
+    "MixinClientPlayNetworkHandler",
+    "MixinClientPlayerInteractionManager",
+    "MerchantScreenHandlerAccessor",
+    "MerchantInventoryAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

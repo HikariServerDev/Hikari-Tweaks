@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "${id}",
+  "version": "${version}",
+  "name": "${name}",
+  "description": "Client side fabric mod made for Hikari Server.",
+  "authors": [
+    "Tamago0314"
+  ],
+  "contact": {
+    "homepage": "https://hikariserver.com",
+    "sources": "https://github.com/HikariServerDev/Hikari-Tweaks",
+    "issues": "https://github.com/HikariServerDev/Hikari-Tweaks/issues"
+  },
+  "license": "LGPL-3.0-or-later",
+  "icon": "assets/hikari-tweaks/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.hikariserver.hikaritweaks.HikariTweaksClient"
+    ],
+    "modmenu": [
+      "com.hikariserver.hikaritweaks.integration.ModMenuCompat"
+    ]
+  },
+  "mixins": [
+    "hikari-tweaks.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_min}",
+    "${fabric_api_id}": "*",
+    "minecraft": "${minecraft}",
+    "malilib": ">=${malilib_min}"
+  },
+  "suggests": {
+    "modmenu": "*",
+    "minihud": "*"
+  }
+}

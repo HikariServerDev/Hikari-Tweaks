@@ -1,0 +1,28 @@
+﻿name: Code Review
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check debug prints
+        run: |
+          if grep -R --line-number "System\.out\.print\|System\.err\.print" src; then
+            echo "Debug print statements found. Please review before merge."
+          else
+            echo "No debug print statements found."
+          fi
+
+      - name: Check TODO markers
+        run: |
+          if grep -R --line-number "TODO\|FIXME\|HACK\|XXX" src; then
+            echo "TODO/FIXME markers found."
+          else
+            echo "No TODO/FIXME markers found."
+          fi

@@ -1,0 +1,41 @@
+﻿name: Bug Report
+description: Report a reproducible bug
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: mod-version
+    attributes:
+      label: Mod Version
+      placeholder: "e.g. 1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: Minecraft Version
+      placeholder: "e.g. 1.18.2"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: What happened and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps To Reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Crash Report
+      render: text
